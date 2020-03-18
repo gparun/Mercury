@@ -15,8 +15,6 @@ class Iex(object):
         self.company_symbols = []
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
-        datapoints = ['logo', 'company']
-        self.Datapoints = dict(zip(datapoints, datapoints))
         self.Companies = {}
 
     def get_stocks(self):
