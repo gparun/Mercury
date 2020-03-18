@@ -14,7 +14,6 @@ class Iex(object):
         self.stock_list = []
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
-        self.cash_flow_list = {}
 
     def get_stocks(self):
         """
@@ -25,6 +24,8 @@ class Iex(object):
             # basically we create a market snapshot
             uri = app.BASE_API_URL + 'ref-data/Iex/symbols/' + app.API_TOKEN
             self.stock_list = self.load_from_iex(uri)
+            for stock in self.stock_list:
+                stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
             return self.stock_list
 
         except Exception as e:
@@ -46,25 +47,11 @@ class Iex(object):
                 for key, value in params.items():
                     uri = uri + '&' + key + '=' + value
             cash_flow = self.load_from_iex(uri)
-            self.cash_flow_list[symbol] = cash_flow
             return cash_flow
         except Exception as ex:
             message = 'Failed while retrieving cash flow list!'
             app_ex = app.AppException(ex, message)
             raise app_ex
-
-    def get_all_cash_flows(self, params=None):
-        """
-        Gets cash_flow for all current stocks
-        :return: List of cash_flow
-        """
-        params = params if params else {}
-        try:
-            return list(map(lambda stock: self.get_cash_flow(stock['symbol'], params), self.get_stocks()))
-        except Exception as e:
-            message = 'Failed while retrieving cash_flow list!'
-            ex = app.AppException(e, message)
-            raise ex
 
     def load_from_iex(self, uri: str):
         """
