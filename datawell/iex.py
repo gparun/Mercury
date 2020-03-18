@@ -24,12 +24,22 @@ class Iex(object):
             # basically we create a market snapshot
             uri = app.BASE_API_URL + 'ref-data/Iex/symbols/' + app.API_TOKEN
             self.stock_list = self.load_from_iex(uri)
+            self.pull_all_books()
             return self.stock_list
 
         except Exception as e:
             message = 'Failed while retrieving stock list!'
             ex = app.AppException(e, message)
             raise ex
+
+    def pull_all_books(self):
+        """
+        Pulls all books to Symbols dict
+        """
+        for symbol_dict in self.stock_list:
+            symbol_name = symbol_dict['symbol']
+            get_book_uri = f'{app.BASE_API_URL}stock/{symbol_name}/book{app.API_TOKEN}'
+            symbol_dict['book'] = self.load_from_iex(get_book_uri)
 
     def load_from_iex(self, uri: str):
         """

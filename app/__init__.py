@@ -4,8 +4,6 @@ Contains core constants, datatypes etc. used application wise
 import logging
 import os
 from enum import Enum
-import decimal
-import json
 
 BASE_API_URL: str = 'https://cloud.iexapis.com/v1/'
 API_TOKEN = '?token=' + os.getenv('API_TOKEN')
