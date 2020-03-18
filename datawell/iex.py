@@ -12,10 +12,9 @@ class Iex(object):
 
     def __init__(self):
         self.stock_list = []
-        self.company_symbols = []
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
-        self.Companies = {}
+        self.get_companies()
 
     def get_stocks(self):
         """
@@ -33,35 +32,13 @@ class Iex(object):
             ex = app.AppException(e, message)
             raise ex
 
-    def get_company_data(self, company_symbol=None):
-        """
-        method for IEX which will populate COMPANY data
-        either for all stocks (if no ticker given) or a particular stock (if ticker given).
-        :return: a list of companies or a particular company
-        """
-        try:
-            return self.get_all_companies() if company_symbol is None else self.get_company_by_symbol(company_symbol)
-        except Exception as e:
-            message = 'Failed while retrieving company data!'
-            ex = app.AppException(e, message)
-            raise ex
-
-    def get_all_companies(self):
-        for company_symbol in self.get_company_symbols():
-            self.Companies[company_symbol] = self.get_company_by_symbol(company_symbol)
-        return self.Companies
+    def get_companies(self):
+        for company_symbol in self.Symbols:
+            company_symbol['company_info'] = self.get_company_by_symbol(company_symbol['symbol'])
 
     def get_company_by_symbol(self, company_symbol: str):
         uri = app.BASE_API_URL + '/stock/{}/company'.format(company_symbol) + app.API_TOKEN
         return self.load_from_iex(uri)
-
-    def get_company_symbols(self):
-        """
-        Get all company symbols from stocks list
-        :return: company symbols
-        """
-        self.company_symbols = [stock['symbol'] for stock in self.stock_list]
-        return self.company_symbols
 
     def load_from_iex(self, uri: str):
         """
