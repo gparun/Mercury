@@ -6,6 +6,7 @@ import json
 from decimal import Decimal
 import requests
 import app
+from datawell.decorators import retrying
 
 
 class Iex(object):
@@ -31,13 +32,14 @@ class Iex(object):
             ex = app.AppException(e, message)
             raise ex
 
+    @retrying(retries=3, delay=3)
     def load_from_iex(self, uri: str):
         """
         Connects to the specified IEX endpoint and gets the data you requested.
         :type uri: str with the endpoint to query
         :return Dict() with the answer from the endpoint, Exception otherwise
         """
-        self.Logger.info('Now retrieveing from ' + uri)
+        self.Logger.info('Now retrieving from ' + uri)
         response = requests.get(uri)
         if response.status_code == 200:
             company_info = json.loads(response.content.decode("utf-8"), parse_float=Decimal)
@@ -47,3 +49,4 @@ class Iex(object):
             error = response.status_code
             self.Logger.error(
                 'Encountered an error: ' + str(error) + "(" + str(response.text) + ") while retrieving " + str(uri))
+            return error
