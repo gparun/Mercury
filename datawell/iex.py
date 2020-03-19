@@ -46,3 +46,15 @@ class Iex(object):
             error = response.status_code
             self.Logger.error(
                 'Encountered an error: ' + str(error) + "(" + str(response.text) + ") while retrieving " + str(uri))
+
+
+    def populate_financials(self, ticker: dict = None):
+        if ticker:
+            self.populate_ticker_financials(ticker)
+        else:
+            for ticker in self.stock_list:
+                self.populate_ticker_financials(ticker)
+
+    def populate_ticker_financials(self, ticker: dict) -> None:
+        url = f'{app.BASE_API_URL}stock/{ticker["symbol"]}/financials/{app.API_TOKEN}'
+        ticker['financials'] = self.load_from_iex(url).get('financials')
