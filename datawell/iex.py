@@ -3,9 +3,11 @@ Contains Iex class which retrieves information from IEX API
 """
 
 import json
+import os
 from decimal import Decimal
 import requests
 import app
+from urllib.parse import urlencode
 
 
 class Iex(object):
@@ -41,17 +43,11 @@ class Iex(object):
         :return: cash_flow as json obj
         """
         params = params if params else {}
-        try:
-            uri = app.BASE_API_URL + 'stock/' + symbol + '/cash-flow' + app.API_TOKEN
-            if params:
-                for key, value in params.items():
-                    uri = uri + '&' + key + '=' + value
-            cash_flow = self.load_from_iex(uri)
-            return cash_flow
-        except Exception as ex:
-            message = 'Failed while retrieving cash flow list!'
-            app_ex = app.AppException(ex, message)
-            raise app_ex
+        params['token'] = os.getenv('API_TOKEN')
+        uri = app.BASE_API_URL + 'stock/' + symbol + '/cash-flow?'
+        uri += urlencode(params)
+        cash_flow = self.load_from_iex(uri)
+        return cash_flow
 
     def load_from_iex(self, uri: str):
         """
