@@ -11,7 +11,6 @@ import app
 class Iex(object):
 
     def __init__(self):
-        self.stock_list = []
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
 
