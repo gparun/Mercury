@@ -6,7 +6,7 @@ import json
 from decimal import Decimal
 import requests
 import app
-from datawell.decorators import retrying
+from datawell.decorators import retry
 
 
 class Iex(object):
@@ -32,7 +32,7 @@ class Iex(object):
             ex = app.AppException(e, message)
             raise ex
 
-    @retrying(retries=3, delay=3)
+    @retry(delay=5, max_delay=30)
     def load_from_iex(self, uri: str):
         """
         Connects to the specified IEX endpoint and gets the data you requested.
