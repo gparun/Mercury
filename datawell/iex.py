@@ -48,7 +48,7 @@ class Iex(object):
                 'Encountered an error: ' + str(error) + "(" + str(response.text) + ") while retrieving " + str(uri))
 
 
-    def populate_financials(self, ticker: dict = None):
+    def populate_financials(self, ticker: dict = None) -> None:
         if ticker:
             self.populate_ticker_financials(ticker)
         else:
