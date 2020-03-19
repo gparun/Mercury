@@ -33,11 +33,17 @@ class Iex(object):
             raise ex
 
     def get_companies(self):
-        for company_symbol in self.Symbols:
-            company_symbol['company_info'] = self.get_company_by_symbol(company_symbol['symbol'])
+        if self.Symbols:
+            try:
+                for company_symbol in self.Symbols:
+                    company_symbol['company_info'] = self.get_company_by_symbol(company_symbol['symbol'])
+            except Exception as e:
+                message = 'Failed while retrieving company list!'
+                ex = app.AppException(e, message)
+                raise ex
 
     def get_company_by_symbol(self, company_symbol: str):
-        uri = app.BASE_API_URL + '/stock/{}/company'.format(company_symbol) + app.API_TOKEN
+        uri = app.BASE_API_URL + 'stock/{}/company'.format(company_symbol) + app.API_TOKEN
         return self.load_from_iex(uri)
 
     def load_from_iex(self, uri: str):
