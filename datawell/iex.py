@@ -15,6 +15,7 @@ class Iex(object):
     def __init__(self):
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
+        self.get_companies()
 
     def get_stocks(self):
         """
@@ -34,6 +35,18 @@ class Iex(object):
             ex = app.AppException(e, message)
             raise ex
 
+
+    def get_companies(self):
+        if self.Symbols:
+            try:
+                for company_symbol in self.Symbols:
+                    uri = app.BASE_API_URL + 'stock/{}/company'.format(company_symbol['symbol']) + app.API_TOKEN
+                    company_symbol['company_info'] = self.load_from_iex(uri)
+            except Exception as e:
+                message = 'Failed while retrieving company list!'
+                ex = app.AppException(e, message)
+                raise ex
+
     def get_cash_flow(self, symbol: str, params=None):
         """
         Will return cash flow data for specific symbol on IEX.
@@ -47,6 +60,7 @@ class Iex(object):
         uri += urlencode(params)
         cash_flow = self.load_from_iex(uri)
         return cash_flow
+
 
     def load_from_iex(self, uri: str):
         """
