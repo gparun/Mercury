@@ -3,9 +3,11 @@ Contains Iex class which retrieves information from IEX API
 """
 
 import json
+import os
 from decimal import Decimal
 import requests
 import app
+from urllib.parse import urlencode
 
 
 class Iex(object):
@@ -23,12 +25,28 @@ class Iex(object):
             # basically we create a market snapshot
             uri = app.BASE_API_URL + 'ref-data/Iex/symbols/' + app.API_TOKEN
             self.stock_list = self.load_from_iex(uri)
+            for stock in self.stock_list:
+                stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
             return self.stock_list
 
         except Exception as e:
             message = 'Failed while retrieving stock list!'
             ex = app.AppException(e, message)
             raise ex
+
+    def get_cash_flow(self, symbol: str, params=None):
+        """
+        Will return cash flow data for specific symbol on IEX.
+        :param params: dict of uri params for filtering
+        :param symbol: str with symbol from stock obj
+        :return: cash_flow as json obj
+        """
+        params = params if params else {}
+        params['token'] = os.getenv('API_TOKEN')
+        uri = app.BASE_API_URL + 'stock/' + symbol + '/cash-flow?'
+        uri += urlencode(params)
+        cash_flow = self.load_from_iex(uri)
+        return cash_flow
 
     def load_from_iex(self, uri: str):
         """
