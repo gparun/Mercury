@@ -16,6 +16,9 @@ class Iex(object):
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
         self.get_companies()
+        self.populate_financials()
+        for stock in self.stock_list:
+            stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
 
     def get_stocks(self):
         """
@@ -26,8 +29,6 @@ class Iex(object):
             # basically we create a market snapshot
             uri = app.BASE_API_URL + 'ref-data/Iex/symbols/' + app.API_TOKEN
             self.stock_list = self.load_from_iex(uri)
-            for stock in self.stock_list:
-                stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
             return self.stock_list
 
         except Exception as e:
