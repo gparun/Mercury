@@ -18,6 +18,7 @@ class Iex(object):
         self.Symbols = self.get_stocks()
         self.get_companies()
         self.populate_financials()
+        self.populate_dividends()
         for stock in self.stock_list:
             stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
         self.populate_advanced_stats()
@@ -72,6 +73,31 @@ class Iex(object):
         uri += urlencode(params)
         cash_flow = self.load_from_iex(uri)
         return cash_flow
+
+    def populate_dividends(self, ticker: dict = None, range: str = '1y'):
+        """
+        Adds dividends item to the dict specified by ticker argument.
+        If the ticker is not specified, then walks though all company dicts in the stock list to add dividends.
+        :param ticker: dictionary to add dividends to
+        :param range: dividends time range
+        """
+        try:
+            if ticker:
+                ticker['dividends'] = self.load_dividends(ticker['symbol'], range)
+            else:
+                for ticker in self.stock_list:
+                    self.populate_dividends(ticker, range)
+        except Exception as e:
+            raise app.AppException(e, 'Exception while populating dividends')
+
+    def load_dividends(self, company_symbol: str, range: str = '1y'):
+        """
+        Makes API call to retrieve dividends for the company and time range
+        :param company_symbol: company identifier
+        :param range: time range to retrieve dividends for
+        """
+        url = f'{app.BASE_API_URL}stock/{company_symbol}/dividends/{range}/{app.API_TOKEN}'
+        return self.load_from_iex(url)
 
     @retry(delay=5, max_delay=30)
     def load_from_iex(self, uri: str):
