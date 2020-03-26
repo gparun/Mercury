@@ -20,6 +20,7 @@ class Iex(object):
         self.populate_financials()
         for stock in self.stock_list:
             stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
+        self.populate_advanced_stats()
 
     def get_stocks(self):
         """
@@ -102,3 +103,27 @@ class Iex(object):
     def populate_ticker_financials(self, ticker: dict) -> None:
         url = f'{app.BASE_API_URL}stock/{ticker["symbol"]}/financials/{app.API_TOKEN}'
         ticker['financials'] = self.load_from_iex(url).get('financials')
+
+    def populate_advanced_stats(self) -> app.ActionStatus:
+        try:
+            for stock in self.stock_list:
+                self.populate_advanced_stats_for_stock(stock)
+            return app.ActionStatus.SUCCESS
+        except Exception as e:
+            message = 'Failed while retrieving advanced-stats data'
+            ex = app.AppException(e, message)
+            raise ex
+
+    def populate_advanced_stats_for_stock(self, stock: dict) -> app.ActionStatus:
+        try:
+            url = self.generate_symbol_info_service_url(stock['symbol'], 'advanced-stats')
+            stock['advanced-stats'] = self.load_from_iex(url)
+            return app.ActionStatus.SUCCESS
+        except Exception as e:
+            self.Logger.exception(f'Unable to load advanced-stats data for stock: {stock["symbol"]}')
+            return app.ActionStatus.ERROR
+
+    def generate_symbol_info_service_url(self, symbol: str, service_name: str) -> str:
+        assert symbol and symbol.strip(), 'IEX symbol must be a non empty string'
+        assert service_name and service_name.strip(), 'IEX service name must be a non empty string'
+        return f'{app.BASE_API_URL}stock/{symbol}/{service_name}/{app.API_TOKEN}'
