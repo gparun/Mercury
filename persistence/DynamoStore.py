@@ -29,3 +29,10 @@ class DynamoStore:
         :returns: number of the elements removed as int, 0 if not found, AppException if AWS Error: No access etc
         """
         pass
+
+    def remove_empty_strings(dict_to_clean: dict):
+        """
+        Removes all the empty key+value pairs from the dict you give it; use to clean up dicts before persisting them to the DynamoDB
+        :param dict_to_clean: as dict()
+        :return: only non-empty key+value pairs from the source dict as dict()
+        """
