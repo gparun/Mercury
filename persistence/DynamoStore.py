@@ -55,6 +55,7 @@ class DynamoStore:
         except AssertionError:
             output = Results()
             output.Results = "You have to pass dict to this method!"
+            return output
 
         # and this analog of *nix panic(*message)...
         except Exception as e:
