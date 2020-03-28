@@ -30,13 +30,15 @@ class retry(object):
             attempt: int = 0
             while self.retries < 0 or attempt < self.retries:
                 attempt += 1
-                result = func(*args, **kwargs)
-                if isinstance(result, int) and result in self.retry_on:
+                output = func(*args, **kwargs)
+                results = output.Results
+                if output.ActionStatus == app.ActionStatus.ERROR \
+                        and results in self.retry_on:
                     exp_delay = self._exponential_delay(attempt, self.delay, self.max_delay)
                     self.Logger.info(f"Retrying after {exp_delay} seconds")
                     time.sleep(exp_delay)
                 else:
-                    return result
+                    return output
 
         return wrapper
 
