@@ -32,7 +32,7 @@ class DynamoStore:
         """
         pass
 
-    def remove_empty_strings(dict_to_clean: dict) -> Results:
+    def remove_empty_strings(self, dict_to_clean: dict) -> Results:
         """
         Removes all the empty key+value pairs from the dict you give it; use to clean up dicts before persisting them to the DynamoDB
         :param dict_to_clean: as dict()
@@ -43,7 +43,7 @@ class DynamoStore:
             assert type(dict_to_clean) is dict
 
             # here comes processing...
-            cleaned_dict = dict()
+            cleaned_dict = self.remove_empty_strings_recursively(dict_to_clean=dict_to_clean)
 
             # now you are ready to ship back...
             output = Results()
@@ -62,3 +62,20 @@ class DynamoStore:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
                                                                 'for the Dynamo!')
             raise catastrophic_exception
+
+    def remove_empty_strings_recursively(self, dict_to_clean: dict) -> dict:
+        """
+        Recursively check all values and removes all the empty key+value pairs from the dict you give it;
+        :param dict_to_clean: as dict()
+        :return: only non-empty key+value pairs from the source dict as dict() inside Results
+        """
+        for key in list(dict_to_clean.keys()):
+            value = dict_to_clean[key]
+            if type(value) is dict:
+                dict_to_clean[key] = self.remove_empty_strings_recursively(value)
+            elif type(value) is str and value == "":
+                del dict_to_clean[key]
+            elif value is None:
+                del dict_to_clean[key]
+
+        return dict_to_clean
