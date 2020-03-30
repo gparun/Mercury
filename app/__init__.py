@@ -10,6 +10,8 @@ API_TOKEN = f"?token={os.getenv('API_TOKEN')}"
 MAX_RETRIEVAL_THREADS = 16
 MAX_PERSISTENCE_THREADS = 16
 
+DYNAMODB_TABLE_NAME = "iexSnapshot2"
+
 if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'
     API_TOKEN = f"?token={os.getenv('API_TEST_TOKEN')}"
@@ -26,7 +28,7 @@ class ActionStatus(Enum):
 class Results:
     def __init__(self):
         self.ActionStatus: ActionStatus = ActionStatus.ERROR
-        self.Results = any()
+        self.Results = None
 
 
 class AppException(Exception):

@@ -1,11 +1,15 @@
-from datetime import datetime
+from datetime import date
 
-from app import Results, ActionStatus, AppException
+import boto3
+from boto3.dynamodb.conditions import Key
+
+from app import Results, ActionStatus, AppException, DYNAMODB_TABLE_NAME
 
 
 class DynamoStore:
     def __init__(self):
-        pass
+        self.Dynamodb = boto3.resource("dynamodb")
+        self.Table = self.Dynamodb.Table(DYNAMODB_TABLE_NAME)
 
     def store_documents(self, documents: list):
         """
@@ -15,14 +19,67 @@ class DynamoStore:
                 """
         pass
 
-    def get_filtered_documents(self, symbol_to_find: str = None, target_date: datetime.date = None):
+    def get_filtered_documents(self, symbol_to_find: str = None, target_date: date = None) -> Results:
         """
         Returns a list of documents matching given ticker and/or date
         :param symbol_to_find: ticker as a string
         :param target_date: desired date as a datetime.date, leave empty to get for all available dates
         :return: a list of dicts() each containing data available for a stock for a given period of time
         """
-        pass
+        try:
+            condition_expression = None
+            date_expression = None
+            if target_date:
+                try:
+                    assert type(target_date) is date
+                except AssertionError:
+                    output = Results()
+                    output.Results = "Target date must be datetime.date!"
+                    return output
+
+                date_expression = Key("date").eq(str(target_date))
+
+            if symbol_to_find:
+                try:
+                    assert type(symbol_to_find) is str
+                except AssertionError:
+                    output = Results()
+                    output.Results = "Symbol to find must be string!"
+                    return output
+
+                symbol_expression = Key("symbol").eq(symbol_to_find)
+                condition_expression = symbol_expression if not date_expression \
+                    else (symbol_expression & date_expression)
+
+                response = self.Table.query(KeyConditionExpression=condition_expression)
+            else:
+                response = self.Table.scan()
+
+            items = response["Items"]
+
+            while True:
+                last_evaluated_key = response.get("LastEvaluatedKey")
+                if last_evaluated_key:
+                    if condition_expression:
+                        response = self.Table.query(
+                            KeyConditionExpression=condition_expression,
+                            ExclusiveStartKey=last_evaluated_key
+                        )
+                    else:
+                        response = self.Table.scan(ExclusiveStartKey=last_evaluated_key)
+                    items += response["Items"]
+                else:
+                    break
+
+            output = Results()
+            output.ActionStatus = ActionStatus.SUCCESS
+            output.Results = items
+            return output
+
+        except Exception as e:
+            catastrophic_exception = AppException(
+                ex=e, message='Catastrophic failure when trying to clean up dict for the Dynamo!')
+            raise catastrophic_exception
 
     def clean_table(self, symbols_to_remove: list):
         """
