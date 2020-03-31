@@ -43,7 +43,22 @@ class DynamoStore:
             assert type(dict_to_clean) is dict
 
             # here comes processing...
-            cleaned_dict = self.remove_empty_strings_recursively(dict_to_clean=dict_to_clean)
+            def recursive_clean(dict_to_process: dict) -> dict:
+                for key in list(dict_to_process.keys()):
+                    value = dict_to_process[key]
+                    # clean if empty string or collection or None
+                    if isinstance(value, (str, dict, list, tuple, type(None))) and not value:
+                        del dict_to_process[key]
+                    elif type(value) is dict:
+                        processed_dict = recursive_clean(value)
+                        if processed_dict:
+                            dict_to_process[key] = processed_dict
+                        else:
+                            del dict_to_process[key]
+
+                return dict_to_process
+
+            cleaned_dict = recursive_clean(dict_to_clean)
 
             # now you are ready to ship back...
             output = Results()
@@ -62,20 +77,3 @@ class DynamoStore:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
                                                                 'for the Dynamo!')
             raise catastrophic_exception
-
-    def remove_empty_strings_recursively(self, dict_to_clean: dict) -> dict:
-        """
-        Recursively check all values and removes all the empty key+value pairs from the dict you give it;
-        :param dict_to_clean: as dict()
-        :return: only non-empty key+value pairs from the source dict as dict() inside Results
-        """
-        for key in list(dict_to_clean.keys()):
-            value = dict_to_clean[key]
-            if type(value) is dict:
-                dict_to_clean[key] = self.remove_empty_strings_recursively(value)
-            elif type(value) is str and value == "":
-                del dict_to_clean[key]
-            elif value is None:
-                del dict_to_clean[key]
-
-        return dict_to_clean
