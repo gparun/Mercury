@@ -1,11 +1,14 @@
 from datetime import datetime
-
-from app import Results, ActionStatus, AppException
+from datetime import date
+from app import Results, ActionStatus, AppException, TABLE
+import boto3
+from boto3.dynamodb.conditions import Key
 
 
 class DynamoStore:
     def __init__(self):
-        pass
+        self.dynamoDb = boto3.resource("dynamodb")
+        self.table = self.dynamoDb.Table(TABLE)
 
     def store_documents(self, documents: list):
         """
@@ -22,7 +25,16 @@ class DynamoStore:
         :param target_date: desired date as a datetime.date, leave empty to get for all available dates
         :return: a list of dicts() each containing data available for a stock for a given period of time
         """
-        pass
+        output = Results()
+        try:
+            criteria = SymbolFilterCriteria(symbol_to_find, target_date)
+            output.Results = criteria.query(self.table)
+            output.ActionStatus = ActionStatus.SUCCESS
+            return output
+        except Exception as e:
+            catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to query symbols '
+                                                                'for the Dynamo!')
+            raise catastrophic_exception
 
     def clean_table(self, symbols_to_remove: list):
         """
@@ -75,5 +87,33 @@ class DynamoStore:
         # and this analog of *nix panic(*message)...
         except Exception as e:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
-                                                                'for the Dynamo!')
+                                                                'from the Dynamo!')
             raise catastrophic_exception
+
+
+class SymbolFilterCriteria:
+    def __init__(self, symbol_to_find: str = None, target_date: date = None):
+        self.criteria_expression = self._build_criteria_expression(symbol_to_find, target_date)
+
+    def _build_criteria_expression(self, symbol_to_find: str = None, target_date: date = None):
+        criteria_expression = None
+        if symbol_to_find:
+            criteria_expression = Key("symbol").eq(symbol_to_find)
+        if target_date:
+            date_query = Key("date").eq(str(target_date))
+            criteria_expression = criteria_expression & date_query if criteria_expression else date_query
+        return criteria_expression
+
+    def query(self, table):
+        items = []
+        last_evaluated_key = None
+        while True:
+            response = \
+                table.query(KeyConditionExpression=self.criteria_expression, ExclusiveStartKey=last_evaluated_key) \
+                if self.criteria_expression \
+                else table.scan(ExclusiveStartKey=last_evaluated_key)
+            items += response["Items"]
+            last_evaluated_key = response.get("LastEvaluatedKey")
+            if not last_evaluated_key:
+                break
+        return items
