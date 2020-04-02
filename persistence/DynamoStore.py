@@ -1,17 +1,19 @@
 from datetime import datetime
-
 from boto3.exceptions import RetriesExceededError
 from botocore.exceptions import ClientError
 import app
-from app import Results, ActionStatus, AppException
-import boto3
-
 from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
+from datetime import date
+from app import Results, ActionStatus, AppException, TABLE
+import boto3
+from boto3.dynamodb.conditions import Key
+
 
 
 class DynamoStore:
     def __init__(self):
-        pass
+        self.dynamoDb = boto3.resource("dynamodb")
+        self.table = self.dynamoDb.Table(TABLE)
 
     def store_documents(self, documents: list) -> ActionStatus:
         """
@@ -45,7 +47,16 @@ class DynamoStore:
         :param target_date: desired date as a datetime.date, leave empty to get for all available dates
         :return: a list of dicts() each containing data available for a stock for a given period of time
         """
-        pass
+        output = Results()
+        try:
+            criteria = SymbolFilterCriteria(symbol_to_find, target_date)
+            output.Results = criteria.query(self.table)
+            output.ActionStatus = ActionStatus.SUCCESS
+            return output
+        except Exception as e:
+            catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to query symbols '
+                                                                'for the Dynamo!')
+            raise catastrophic_exception
 
     def clean_table(self, symbols_to_remove: list):
         """
@@ -55,7 +66,7 @@ class DynamoStore:
         """
         pass
 
-    def remove_empty_strings(dict_to_clean: dict) -> Results:
+    def remove_empty_strings(self, dict_to_clean: dict) -> Results:
         """
         Removes all the empty key+value pairs from the dict you give it; use to clean up dicts before persisting them to the DynamoDB
         :param dict_to_clean: as dict()
@@ -66,7 +77,22 @@ class DynamoStore:
             assert type(dict_to_clean) is dict
 
             # here comes processing...
-            cleaned_dict = dict_to_clean
+            def recursive_clean(dict_to_process: dict) -> dict:
+                for key in list(dict_to_process.keys()):
+                    value = dict_to_process[key]
+                    # clean if empty string or collection or None
+                    if isinstance(value, (str, dict, list, tuple, type(None))) and not value:
+                        del dict_to_process[key]
+                    elif type(value) is dict:
+                        processed_dict = recursive_clean(value)
+                        if processed_dict:
+                            dict_to_process[key] = processed_dict
+                        else:
+                            del dict_to_process[key]
+
+                return dict_to_process
+
+            cleaned_dict = recursive_clean(dict_to_clean)
 
             # now you are ready to ship back...
             output = Results()
@@ -83,7 +109,7 @@ class DynamoStore:
         # and this analog of *nix panic(*message)...
         except Exception as e:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
-                                                                'for the Dynamo!')
+                                                                'from the Dynamo!')
             raise catastrophic_exception
 
     def get_dynamodb_resouce(self):
@@ -107,3 +133,32 @@ class DynamoStore:
         non_empty_docs_result = [DynamoStore.remove_empty_strings(doc).Results for doc in documents]
         cleaned_up = [doc for doc in non_empty_docs_result if self.validate_symbol_document(doc)]
         return cleaned_up
+
+
+class SymbolFilterCriteria:
+    def __init__(self, symbol_to_find: str = None, target_date: date = None):
+        self.criteria_expression = self._build_criteria_expression(symbol_to_find, target_date)
+
+    def _build_criteria_expression(self, symbol_to_find: str = None, target_date: date = None):
+        criteria_expression = None
+        if symbol_to_find:
+            criteria_expression = Key("symbol").eq(symbol_to_find)
+        if target_date:
+            date_query = Key("date").eq(str(target_date))
+            criteria_expression = criteria_expression & date_query if criteria_expression else date_query
+        return criteria_expression
+
+    def query(self, table):
+        items = []
+        last_evaluated_key = None
+        while True:
+            response = \
+                table.query(KeyConditionExpression=self.criteria_expression, ExclusiveStartKey=last_evaluated_key) \
+                if self.criteria_expression \
+                else table.scan(ExclusiveStartKey=last_evaluated_key)
+            items += response["Items"]
+            last_evaluated_key = response.get("LastEvaluatedKey")
+            if not last_evaluated_key:
+                break
+        return items
+
