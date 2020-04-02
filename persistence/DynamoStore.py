@@ -130,7 +130,7 @@ class DynamoStore:
                 :param documents: list of symbol dicts
                 :returns: cleaned up list of symbol dicts
                 """
-        non_empty_docs_result = [DynamoStore.remove_empty_strings(doc).Results for doc in documents]
+        non_empty_docs_result = [self.remove_empty_strings(doc).Results for doc in documents]
         cleaned_up = [doc for doc in non_empty_docs_result if self.validate_symbol_document(doc)]
         return cleaned_up
 
