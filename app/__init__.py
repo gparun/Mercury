@@ -26,7 +26,7 @@ class ActionStatus(Enum):
 class Results:
     def __init__(self):
         self.ActionStatus: ActionStatus = ActionStatus.ERROR
-        self.Results = any()
+        self.Results = None
 
 
 class AppException(Exception):
