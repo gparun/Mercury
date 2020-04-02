@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 import app
 from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
 from datetime import date
-from app import Results, ActionStatus, AppException, TABLE
+from app import Results, ActionStatus, AppException, TABLE, REGION
 import boto3
 from boto3.dynamodb.conditions import Key
 
@@ -12,8 +12,8 @@ from boto3.dynamodb.conditions import Key
 
 class DynamoStore:
     def __init__(self):
-        self.dynamoDb = boto3.resource("dynamodb")
-        self.table = self.dynamoDb.Table(TABLE)
+        self.dynamoDb = boto3.resource("dynamodb", region_name='us-east-1')
+        self.table = self.dynamoDb.Table('test_table')
 
     def store_documents(self, documents: list) -> ActionStatus:
         """
@@ -161,4 +161,3 @@ class SymbolFilterCriteria:
             if not last_evaluated_key:
                 break
         return items
-
