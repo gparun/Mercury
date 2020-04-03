@@ -1,5 +1,5 @@
-from collections import Generator
 from datetime import datetime
+from typing import Generator
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -70,7 +70,7 @@ class DynamoStore:
         with table.batch_writer() as batch:
             for symbol in symbols_to_remove:
                 for page in self._query_by_page(table, symbol["symbol"]):
-                    total_items_to_delete += page['Count']
+                    total_items_to_delete += page["Count"]
                     for item in page["Items"]:
                         batch.delete_item(
                             Key={
@@ -81,7 +81,7 @@ class DynamoStore:
         return total_items_to_delete
 
     @staticmethod
-    def _query_by_page(table, symbol: str) -> Generator:
+    def _query_by_page(table, symbol: str) -> Generator[dict, None, None]:
         """Use this method to query all symbol related records using pagination.
 
         :param table: where to search.
@@ -140,10 +140,32 @@ class DynamoStore:
                     'KeyType': 'RANGE',
                 }
             ],
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'date-symbol-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'date',
+                            'KeyType': 'HASH',
+                        },
+                        {
+                            'AttributeName': 'symbol',
+                            'KeyType': 'RANGE',
+                        },
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL',
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 5,
+                        'WriteCapacityUnits': 100,
+                    }
+                }
+            ],
             BillingMode='PROVISIONED',
             ProvisionedThroughput={
                 'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
+                'WriteCapacityUnits': 100
             },
         )
         self.Logger.info('Wait until the table exists.')
