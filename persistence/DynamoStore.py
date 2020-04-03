@@ -96,7 +96,10 @@ class DynamoStore:
         total_items_to_delete: int = 0
         with self.table.batch_writer() as batch:
             for symbol in symbols_to_remove:
-                for page in self._query_by_page(symbol["symbol"]):
+                symbol_to_remove: str = symbol.get("symbol")
+                if not symbols_to_remove:
+                    continue
+                for page in self._query_by_page(symbol_to_remove):
                     total_items_to_delete += page['Count']
                     for item in page["Items"]:
                         batch.delete_item(
@@ -107,7 +110,7 @@ class DynamoStore:
                         )
         return total_items_to_delete
 
-    def _query_by_page(self, symbol: str) -> Generator:
+    def _query_by_page(self, symbol: str) -> Generator[dict, None, None]:
         """Use this method to query all symbol related records using pagination.
 
         :param symbol: what to search.
@@ -165,10 +168,32 @@ class DynamoStore:
                     'KeyType': 'RANGE',
                 }
             ],
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'date-symbol-index',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'date',
+                            'KeyType': 'HASH',
+                        },
+                        {
+                            'AttributeName': 'symbol',
+                            'KeyType': 'RANGE',
+                        }
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL',
+                    },
+                    'ProvisionedThroughput': {
+                        'ReadCapacityUnits': 5,
+                        'WriteCapacityUnits': 100,
+                    }
+                },
+            ],
             BillingMode='PROVISIONED',
             ProvisionedThroughput={
                 'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5,
+                'WriteCapacityUnits': 100,
             },
         )
         self.Logger.info('Wait until the table exists.')
