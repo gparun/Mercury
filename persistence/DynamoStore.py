@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from boto3.exceptions import RetriesExceededError
 from botocore.exceptions import ClientError
 import app
@@ -11,9 +13,10 @@ from app import Results, ActionStatus, AppException
 
 
 class DynamoStore:
-    def __init__(self):
-        self.Dynamodb = boto3.resource("dynamodb")
-        self.Table = self.Dynamodb.Table(app.AWS_TABLE_NAME)
+    def __init__(self, dynamo_db, table_name):
+        self.Dynamodb = dynamo_db
+        self.TableName = table_name
+        self.Table = self.Dynamodb.Table(self.TableName)
 
     def store_documents(self, documents: list) -> ActionStatus:
         """
@@ -23,8 +26,7 @@ class DynamoStore:
                 """
         try:
             cleaned_documents = self.cleanup_symbol_documents(documents)
-            client = self.get_dynamodb_resouce()
-            with DynamoBatchWriter(table=app.AWS_TABLE_NAME, dynamo_client=client, retries=RetryConfig(10)) as batch:
+            with DynamoBatchWriter(table=self.TableName, dynamo_client=self.Dynamodb, retries=RetryConfig(10)) as batch:
                 for document in cleaned_documents:
                     batch.put_item(
                         Item={
@@ -50,7 +52,7 @@ class DynamoStore:
         output = Results()
         try:
             criteria = SymbolFilterCriteria(symbol_to_find, target_date)
-            output.Results = criteria.query(self.table)
+            output.Results = criteria.query(self.Table)
             output.ActionStatus = ActionStatus.SUCCESS
             return output
         except Exception as e:
@@ -65,18 +67,9 @@ class DynamoStore:
         :param target_date: desired date as a datetime.date, leave empty to get for all available dates
         :return: a list of dicts() each containing data available for a stock for a given period of time
         """
+
         try:
             condition_expression = None
-            date_expression = None
-            if target_date:
-                try:
-                    assert type(target_date) is date
-                except AssertionError:
-                    output = Results()
-                    output.Results = "Target date must be datetime.date!"
-                    return output
-
-                date_expression = Key("date").eq(str(target_date))
 
             if symbol_to_find:
                 try:
@@ -86,28 +79,41 @@ class DynamoStore:
                     output.Results = "Symbol to find must be string!"
                     return output
 
-                symbol_expression = Key("symbol").eq(symbol_to_find)
-                condition_expression = symbol_expression if not date_expression \
-                    else (symbol_expression & date_expression)
+                condition_expression = Key("symbol").eq(symbol_to_find)
 
-                response = self.Table.query(KeyConditionExpression=condition_expression)
-            else:
-                response = self.Table.scan()
+            if target_date:
+                try:
+                    assert type(target_date) is date
+                except AssertionError:
+                    output = Results()
+                    output.Results = "Target date must be datetime.date!"
+                    return output
 
-            items = response["Items"]
+                date_expression = Key("date").eq(str(target_date))
+                condition_expression = date_expression if not condition_expression \
+                    else condition_expression & date_expression
 
+            query_params: dict = {
+                "TableName": self.TableName,
+                "KeyConditionExpression": condition_expression
+            }
+
+            if not symbol_to_find:
+                query_params["IndexName"] = "data-symbol-index"
+
+            total_items: List[dict] = []
+            last_evaluated_key: Optional[dict] = None
             while True:
-                last_evaluated_key = response.get("LastEvaluatedKey")
                 if last_evaluated_key:
-                    if condition_expression:
-                        response = self.Table.query(
-                            KeyConditionExpression=condition_expression,
-                            ExclusiveStartKey=last_evaluated_key
-                        )
-                    else:
-                        response = self.Table.scan(ExclusiveStartKey=last_evaluated_key)
-                    items += response["Items"]
-                else:
+                    query_params["ExclusiveStartKey"] = last_evaluated_key
+
+                result: dict = self.Table.query(**query_params)
+                items = result.get("Items")
+                if items:
+                    total_items.extend(items)
+
+                last_evaluated_key = result.get("LastEvaluatedKey")
+                if not last_evaluated_key:
                     break
 
             output = Results()
@@ -173,14 +179,6 @@ class DynamoStore:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
                                                                 'from the Dynamo!')
             raise catastrophic_exception
-
-    def get_dynamodb_resouce(self):
-        return boto3.resource(
-            'dynamodb',
-            aws_access_key_id=app.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=app.AWS_SECRET_ACCESS_KEY,
-            region_name=app.AWS_TABLE_REGION
-        )
 
     def validate_symbol_document(self, document):
         return document is not None and ('symbol' in document) and ('date' in document)
