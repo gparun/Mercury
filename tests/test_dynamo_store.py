@@ -1,5 +1,6 @@
 import unittest
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 from app import ActionStatus
 from persistence.DynamoStore import DynamoStore
@@ -48,7 +49,8 @@ class TestDynamoStoreRemover(TestCase):
         }
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = DynamoStore(dynamo_db=MagicMock(), table_name="table") \
+            .remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertDictEqual(expected_data, actual_data.Results, msg="Expected data does not match with actual")
@@ -59,7 +61,8 @@ class TestDynamoStoreRemover(TestCase):
         input_data = 'not dict'
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = DynamoStore(dynamo_db=MagicMock(), table_name="table") \
+            .remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertEqual(ActionStatus.ERROR, actual_data.ActionStatus, msg="Inccorect action status was returned")
