@@ -97,7 +97,7 @@ class DynamoStore:
         with self.table.batch_writer() as batch:
             for symbol in symbols_to_remove:
                 symbol_to_remove: str = symbol.get("symbol")
-                if not symbols_to_remove:
+                if not symbol_to_remove:
                     continue
                 for page in self._query_by_page(symbol_to_remove):
                     total_items_to_delete += page['Count']
