@@ -43,7 +43,6 @@ class StoreDocumentsTest(unittest.TestCase):
         # if AWS threw not a Throttling Exception then we shouldn't retry save data
         self.mock_client.batch_write_item.assert_called_once()
 
-    @unittest.skip("Infinite test. Need rewrite.")
     def test_retry_error(self):
         client_err_response = {'Error': {'Code': 'ProvisionedThroughputExceededException', 'Message': 'Error insert'}}
         self.mock_client.batch_write_item.side_effect = ClientError(client_err_response, "operation")

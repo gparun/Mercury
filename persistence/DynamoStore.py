@@ -94,9 +94,11 @@ class DynamoStore:
                     else condition_expression & date_expression
 
             query_params: dict = {
-                "TableName": self.TableName,
-                "KeyConditionExpression": condition_expression
+                "TableName": self.TableName
             }
+
+            if condition_expression:
+                query_params["KeyConditionExpression"] = condition_expression
 
             if not symbol_to_find:
                 query_params["IndexName"] = "data-symbol-index"
@@ -118,7 +120,7 @@ class DynamoStore:
 
             output = Results()
             output.ActionStatus = ActionStatus.SUCCESS
-            output.Results = items
+            output.Results = total_items
             return output
 
         except Exception as e:
