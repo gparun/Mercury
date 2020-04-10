@@ -4,6 +4,8 @@ Contains Iex class which retrieves information from IEX API
 
 import json
 from decimal import Decimal
+from typing import Dict, Callable, List, Optional
+
 import requests
 import app
 from datawell.decorators import retry
@@ -11,54 +13,34 @@ from urllib.parse import urlencode
 
 
 class Iex(object):
+    _BLOCK_LOADERS: Dict[str, Callable] = {
+        'books': lambda iex: iex.pull_all_books(),
+        'financials': lambda iex: iex.populate_financials(),
+        'dividends': lambda iex: iex.populate_dividends(),
+        'cash_flow': lambda iex: iex.get_cash_flows(),
+        'advanced_stats': lambda iex: iex.populate_advanced_stats()
+    }
 
-    def __init__(self, blocks=None):
+    def __init__(self, blocks: List[str] = None):
+        self.blocks: List[str] = blocks
         self.Logger = app.get_logger(__name__)
+        self.Symbols: Optional[Dict] = None
+
+    def load(self) -> None:
+        """
+        Loads all data from Iex
+        """
         self.Symbols = self.get_stocks()
-        self.load_blocks(blocks)
+        if self.blocks and isinstance(self.blocks, list):
+            self.load_blocks()
         self.get_companies()
 
-    def load_blocks(self, blocks=None):
+    def load_blocks(self) -> None:
         """
         Load specified blocks.
-        :param blocks: blocks to load
         :return: IEX snapshot is populated with valid blocks
         """
-        if blocks is None:
-            blocks = []
-        if isinstance(blocks, list):
-            for block_to_process in blocks:
-                method_name = self.get_block_method_name(block_to_process)
-                self.load_block(method_name, block_to_process)
-
-    def get_block_method_name(self, block_name: str):
-        """
-        Find block method to execute.
-        :param block_name: passed block name
-        :return: block method name to execute
-        """
-        switcher = {
-            'books': 'pull_all_books',
-            'financials': 'populate_financials',
-            'dividends': 'populate_dividends',
-            'cash_flow': 'get_cash_flows',
-            'advanced_stats': 'populate_advanced_stats'
-        }
-        return switcher.get(block_name)
-
-    def load_block(self, method_name: str, block_name: str):
-        """
-        Load block data for valid block names or log the name of the invalid block name.
-        :param method_name: method to execute
-        :param block_name: passed block name
-        :return: IEX snapshot is populated with passed block name
-        """
-        if method_name:
-            self.Logger.info(f'Getting info from block {block_name}')
-            load = getattr(self, method_name)
-            load()
-        else:
-            self.Logger.info(f'Invalid block name passed: {block_name}')
+        [loader(self) for loader in [Iex._BLOCK_LOADERS.get(block) for block in self.blocks] if loader is not None]
 
     def get_cash_flows(self):
         """
@@ -212,4 +194,3 @@ class Iex(object):
             return results.Results
         else:
             return ""
-
