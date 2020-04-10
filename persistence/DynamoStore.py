@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 import app
 from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
 from datetime import date
-from app import Results, ActionStatus, AppException, TABLE
+from app import Results, ActionStatus, AppException, AWS_TABLE_NAME
 import boto3
 from boto3.dynamodb.conditions import Key
 
@@ -15,7 +15,7 @@ class DynamoStore:
     def __init__(self):
         self.Logger = app.get_logger(__name__)
         self.dynamoDb = boto3.resource("dynamodb")
-        self.table = self.dynamoDb.Table(TABLE)
+        self.table = self.dynamoDb.Table(AWS_TABLE_NAME)
 
     def store_documents(self, documents: list) -> ActionStatus:
         """
@@ -25,8 +25,7 @@ class DynamoStore:
                 """
         try:
             cleaned_documents = self.cleanup_symbol_documents(documents)
-            client = self.get_dynamodb_resouce()
-            with DynamoBatchWriter(table=app.AWS_TABLE_NAME, dynamo_client=client, retries=RetryConfig(10)) as batch:
+            with DynamoBatchWriter(table=AWS_TABLE_NAME, dynamo_client=self.dynamoDb, retries=RetryConfig(10)) as batch:
                 for document in cleaned_documents:
                     batch.put_item(
                         Item={
@@ -143,11 +142,11 @@ class DynamoStore:
         self.Logger.info('Delete the table')
         self.table.delete()
         self.Logger.info('Wait until the table is deleted')
-        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.TABLE)
+        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.AWS_TABLE_NAME)
 
         self.Logger.info('Create a new table.')
         self.table = self.dynamoDb.create_table(
-            TableName=app.TABLE,
+            TableName=app.AWS_TABLE_NAME,
             AttributeDefinitions=[
                 {
                     'AttributeName': 'symbol',
@@ -197,7 +196,7 @@ class DynamoStore:
             },
         )
         self.Logger.info('Wait until the table exists.')
-        self.table.meta.client.get_waiter('table_exists').wait(TableName=app.TABLE)
+        self.table.meta.client.get_waiter('table_exists').wait(TableName=app.AWS_TABLE_NAME)
 
     def remove_empty_strings(self, dict_to_clean: dict) -> Results:
         """
@@ -244,14 +243,6 @@ class DynamoStore:
             catastrophic_exception = AppException(ex=e, message='Catastrophic failure when trying to clean up dict '
                                                                 'from the Dynamo!')
             raise catastrophic_exception
-
-    def get_dynamodb_resouce(self):
-        return boto3.resource(
-            'dynamodb',
-            aws_access_key_id=app.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=app.AWS_SECRET_ACCESS_KEY,
-            region_name=app.AWS_TABLE_REGION
-        )
 
     def validate_symbol_document(self, document):
         return document is not None and ('symbol' in document) and ('date' in document)

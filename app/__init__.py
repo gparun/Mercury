@@ -10,18 +10,11 @@ API_TOKEN = f"?token={os.getenv('API_TOKEN')}"
 MAX_RETRIEVAL_THREADS = 16
 MAX_PERSISTENCE_THREADS = 16
 
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_TABLE_REGION = os.getenv('AWS_TABLE_REGION')
 AWS_TABLE_NAME = os.getenv('AWS_TABLE_NAME')
 
 if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'
     API_TOKEN = f"?token={os.getenv('API_TEST_TOKEN')}"
-
-REGION = os.getenv('REGION')
-TABLE = os.getenv('TABLE')
-
 
 class ActionStatus(Enum):
     SUCCESS = 0
