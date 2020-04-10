@@ -2,10 +2,10 @@ import unittest
 from unittest import TestCase
 
 from app import ActionStatus
-from persistence.DynamoStore import DynamoStore
+from app.util.DictUtils import DictUtils
 
 
-class TestDynamoStoreRemover(TestCase):
+class TestDictUtils(TestCase):
     def test_remove_empty_strings_recursively_from_dict(self):
         # ARRANGE:
         input_data = {
@@ -48,7 +48,7 @@ class TestDynamoStoreRemover(TestCase):
         }
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = DictUtils.remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertDictEqual(expected_data, actual_data.Results, msg="Expected data does not match with actual")
@@ -59,7 +59,7 @@ class TestDynamoStoreRemover(TestCase):
         input_data = 'not dict'
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = DictUtils.remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertEqual(ActionStatus.ERROR, actual_data.ActionStatus, msg="Inccorect action status was returned")
