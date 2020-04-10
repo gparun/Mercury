@@ -1,11 +1,22 @@
 import unittest
 from unittest import TestCase
+from unittest.mock import MagicMock
+
+from _pytest.monkeypatch import MonkeyPatch
 
 from app import ActionStatus
 from persistence.DynamoStore import DynamoStore
 
+TABLE_NAME = "test-table"
+
 
 class TestDynamoStoreRemover(TestCase):
+    def setUp(self):
+        self.mock_client = MagicMock()
+        self.monkeypatch = MonkeyPatch()
+        self.monkeypatch.setattr("app.get_dynamodb_resource", MagicMock(return_value=self.mock_client))
+        self.dynamoStore = DynamoStore(TABLE_NAME)
+
     def test_remove_empty_strings_recursively_from_dict(self):
         # ARRANGE:
         input_data = {
@@ -48,7 +59,7 @@ class TestDynamoStoreRemover(TestCase):
         }
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = self.dynamoStore.remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertDictEqual(expected_data, actual_data.Results, msg="Expected data does not match with actual")
@@ -59,7 +70,7 @@ class TestDynamoStoreRemover(TestCase):
         input_data = 'not dict'
 
         # ACT:
-        actual_data = DynamoStore().remove_empty_strings(input_data)
+        actual_data = self.dynamoStore.remove_empty_strings(input_data)
 
         # ASSERT:
         self.assertEqual(ActionStatus.ERROR, actual_data.ActionStatus, msg="Inccorect action status was returned")

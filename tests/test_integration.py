@@ -1,6 +1,7 @@
 from datetime import datetime
 from unittest import TestCase
 
+from app import TABLE_NAME
 from datawell.iex import Iex
 from persistence.DynamoStore import DynamoStore
 
@@ -9,7 +10,7 @@ class TestDynamoStore(TestCase):
     def test_store_documents_PassValidDocs_ExpectThemAppearInDB(self):
         # ARRANGE:
         datasource = Iex()
-        datalake = DynamoStore()
+        datalake = DynamoStore(TABLE_NAME)
 
         # ACT:
         datalake.store_documents(documents=datasource.Symbols)
