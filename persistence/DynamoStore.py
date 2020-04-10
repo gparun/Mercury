@@ -269,6 +269,10 @@ class DynamoStore:
 
 
 class SymbolFilterCriteria:
+    """
+    Represents criteria which is used to query data from Dynamo table by the following keys - symbol and date.
+    If keys are not specified is scans the entire table.
+    """
     def __init__(self, symbol_to_find: str = None, target_date: date = None):
         self.criteria_expression = self._build_criteria_expression(symbol_to_find, target_date)
 
@@ -281,17 +285,24 @@ class SymbolFilterCriteria:
             criteria_expression = criteria_expression & date_query if criteria_expression else date_query
         return criteria_expression
 
-    def query(self, table):
+    def query(self, table) -> list:
+        """
+        :param table: DynamoDB table to apply this criteria to
+        :returns: list of items filtered by criteria or the entire table data if the criteria keys were not specified
+        """
         items = []
-        last_evaluated_key = None
+        query_params: dict = {}
+        if self.criteria_expression:
+            query_params["KeyConditionExpression"] = self.criteria_expression
         while True:
             response = \
-                table.query(KeyConditionExpression=self.criteria_expression, ExclusiveStartKey=last_evaluated_key) \
-                if self.criteria_expression \
-                else table.scan(ExclusiveStartKey=last_evaluated_key)
+                table.query(**query_params) \
+                if "KeyConditionExpression" in query_params.keys() \
+                else table.scan(**query_params)
             items += response["Items"]
             last_evaluated_key = response.get("LastEvaluatedKey")
-            if not last_evaluated_key:
+            if last_evaluated_key:
+                query_params["ExclusiveStartKey"] = last_evaluated_key
+            else:
                 break
         return items
-
