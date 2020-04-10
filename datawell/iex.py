@@ -12,16 +12,60 @@ from urllib.parse import urlencode
 
 class Iex(object):
 
-    def __init__(self):
+    def __init__(self, blocks=None):
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
-        self.pull_all_books()
+        self.load_blocks(blocks)
         self.get_companies()
-        self.populate_financials()
-        self.populate_dividends()
+
+    def load_blocks(self, blocks=None):
+        """
+        Load specified blocks.
+        :param blocks: blocks to load
+        :return: IEX snapshot is populated with valid blocks
+        """
+        if blocks is None:
+            blocks = []
+        if isinstance(blocks, list):
+            for block_to_process in blocks:
+                method_name = self.get_block_method_name(block_to_process)
+                self.load_block(method_name, block_to_process)
+
+    def get_block_method_name(self, block_name: str):
+        """
+        Find block method to execute.
+        :param block_name: passed block name
+        :return: block method name to execute
+        """
+        switcher = {
+            'books': 'pull_all_books',
+            'financials': 'populate_financials',
+            'dividends': 'populate_dividends',
+            'cash_flow': 'get_cash_flows',
+            'advanced_stats': 'populate_advanced_stats'
+        }
+        return switcher.get(block_name)
+
+    def load_block(self, method_name: str, block_name: str):
+        """
+        Load block data for valid block names or log the name of the invalid block name.
+        :param method_name: method to execute
+        :param block_name: passed block name
+        :return: IEX snapshot is populated with passed block name
+        """
+        if method_name:
+            self.Logger.info(f'Getting info from block {block_name}')
+            load = getattr(self, method_name)
+            load()
+        else:
+            self.Logger.info(f'Invalid block name passed: {block_name}')
+
+    def get_cash_flows(self):
+        """
+        Pulls all cash flows to Symbols dict
+        """
         for stock in self.Symbols:
             stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
-        self.populate_advanced_stats()
 
     def get_stocks(self):
         """
