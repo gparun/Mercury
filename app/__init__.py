@@ -5,6 +5,8 @@ import logging
 import os
 from enum import Enum
 
+import boto3
+
 BASE_API_URL: str = 'https://cloud.iexapis.com/v1/'
 API_TOKEN = f"?token={os.getenv('API_TOKEN')}"
 MAX_RETRIEVAL_THREADS = 16
@@ -12,15 +14,12 @@ MAX_PERSISTENCE_THREADS = 16
 
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_TABLE_REGION = os.getenv('AWS_TABLE_REGION')
-AWS_TABLE_NAME = os.getenv('AWS_TABLE_NAME')
+AWS_REGION = os.getenv('AWS_REGION')
+TABLE_NAME = os.getenv('TABLE_NAME')
 
 if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'
     API_TOKEN = f"?token={os.getenv('API_TEST_TOKEN')}"
-
-REGION = os.getenv('REGION')
-TABLE = os.getenv('TABLE')
 
 
 class ActionStatus(Enum):
@@ -52,3 +51,12 @@ def get_logger(module_name: str, level: int = logging.INFO):
         handler.setFormatter(log_format)
         logger.addHandler(handler)
     return logger
+
+
+def get_dynamodb_resource():
+    return boto3.resource(
+        'dynamodb',
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION
+    )
