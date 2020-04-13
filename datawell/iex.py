@@ -4,7 +4,7 @@ Contains Iex class which retrieves information from IEX API
 
 import json
 from decimal import Decimal
-from typing import Dict, Callable, List, Optional
+from typing import List
 
 import requests
 import app
@@ -13,41 +13,37 @@ from urllib.parse import urlencode
 
 
 class Iex(object):
-    _BLOCK_LOADERS: Dict[str, Callable] = {
-        'books': lambda iex: iex.pull_all_books(),
-        'financials': lambda iex: iex.populate_financials(),
-        'dividends': lambda iex: iex.populate_dividends(),
-        'cash_flow': lambda iex: iex.get_cash_flows(),
-        'advanced_stats': lambda iex: iex.populate_advanced_stats()
-    }
 
-    def __init__(self, blocks: List[str] = None):
-        self.blocks: List[str] = blocks
+    def __init__(self, datapoints: List[str] = None):
         self.Logger = app.get_logger(__name__)
-        self.Symbols: Optional[Dict] = None
-
-    def load(self) -> None:
-        """
-        Loads all data from Iex
-        """
         self.Symbols = self.get_stocks()
-        if self.blocks and isinstance(self.blocks, list):
-            self.load_blocks()
+        self.datapoints = self._check_datapoints(datapoints)
+        self.pull_all_books()
         self.get_companies()
-
-    def load_blocks(self) -> None:
-        """
-        Load specified blocks.
-        :return: IEX snapshot is populated with valid blocks
-        """
-        [loader(self) for loader in [Iex._BLOCK_LOADERS.get(block) for block in self.blocks] if loader is not None]
-
-    def get_cash_flows(self):
-        """
-        Pulls all cash flows to Symbols dict
-        """
+        self.populate_financials()
+        self.populate_dividends()
         for stock in self.Symbols:
             stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
+        self.populate_advanced_stats()
+
+    def _check_datapoints(self, datapoints_to_check: List[str]) -> List[str]:
+        """
+        This method is used to check whether the desired datapoints are valid and accessible.
+        It makes a test API call for each datapoint in the list.
+         If there is no any valid datapoint, then list with "company" only is returned.
+
+        :param datapoints_to_check:
+        :return: list of valid datapoints
+        """
+        valid_blocks: List[str] = []
+        if datapoints_to_check and isinstance(datapoints_to_check, list):
+            for block in datapoints_to_check:
+                result: app.Results = self.load_from_iex(f"{app.BASE_API_URL}stock/aapl/batch{app.API_TOKEN}&types={block}")
+                if result.ActionStatus == app.ActionStatus.SUCCESS:
+                    valid_blocks.append(block)
+        if not valid_blocks:
+            valid_blocks.append("company")
+        return valid_blocks
 
     def get_stocks(self):
         """
@@ -194,3 +190,4 @@ class Iex(object):
             return results.Results
         else:
             return ""
+

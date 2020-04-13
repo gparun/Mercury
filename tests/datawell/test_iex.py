@@ -1,41 +1,85 @@
+from typing import List
+
 import pytest
 
+import app
 from datawell.iex import Iex
 
 
-@pytest.mark.parametrize("blocks", [
-    None, [], {}, 1, 1.0,
-])
-def test_load_no_blocks(mocker, blocks):
+def test_load_valid_blocks(mocker):
     # ARRANGE:
-    iex: Iex = Iex(blocks)
-    mock_get_stocks = mocker.patch.object(iex, "get_stocks")
-    mock_load_blocks = mocker.patch.object(iex, "load_blocks")
-    mock_get_companies = mocker.patch.object(iex, "get_companies")
+    datapoint: str = "logo"
+    mock_get_stocks = mocker.patch.object(Iex, "get_stocks")
+    mock_pull_all_books = mocker.patch.object(Iex, "pull_all_books")
+    mock_get_companies = mocker.patch.object(Iex, "get_companies")
+    mock_populate_financials = mocker.patch.object(Iex, "populate_financials")
+    mock_populate_dividends = mocker.patch.object(Iex, "populate_dividends")
+    mock_populate_advanced_stats = mocker.patch.object(Iex, "populate_advanced_stats")
+    results: app.Results = app.Results()
+    results.ActionStatus = app.ActionStatus.SUCCESS
+    mock_load_from_iex = mocker.patch.object(Iex, "load_from_iex", return_value=results)
 
     # ACT:
-    iex.load()
+    datapoints: List[str] = Iex([datapoint]).datapoints
 
     # ASSERT:
+    assert datapoints == [datapoint]
     mock_get_stocks.assert_called_once()
-    mock_load_blocks.assert_not_called()
+    mock_pull_all_books.assert_called_once()
     mock_get_companies.assert_called_once()
+    mock_populate_financials.assert_called_once()
+    mock_populate_dividends.assert_called_once()
+    mock_populate_advanced_stats.assert_called_once()
+    mock_load_from_iex.assert_called_once()
 
 
-@pytest.mark.parametrize("blocks, method", [
-    (["books"], "pull_all_books"),
-    (["financials"], "populate_financials"),
-    (["dividends"], "populate_dividends"),
-    (["cash_flow"], "get_cash_flows"),
-    (["advanced_stats"], "populate_advanced_stats"),
+@pytest.mark.parametrize("datapoints", [
+    None, [], {}, 1
 ])
-def test_load_blocks(mocker, blocks, method):
+def test_load_no_blocks(mocker, datapoints):
     # ARRANGE:
-    iex: Iex = Iex(blocks)
-    mock_load_block = mocker.patch.object(iex, method)
+    mock_get_stocks = mocker.patch.object(Iex, "get_stocks")
+    mock_pull_all_books = mocker.patch.object(Iex, "pull_all_books")
+    mock_get_companies = mocker.patch.object(Iex, "get_companies")
+    mock_populate_financials = mocker.patch.object(Iex, "populate_financials")
+    mock_populate_dividends = mocker.patch.object(Iex, "populate_dividends")
+    mock_populate_advanced_stats = mocker.patch.object(Iex, "populate_advanced_stats")
 
     # ACT:
-    iex.load_blocks()
+    datapoints: List[str] = Iex(datapoints).datapoints
 
     # ASSERT:
-    mock_load_block.assert_called_once()
+    assert datapoints == ["company"]
+    mock_get_stocks.assert_called_once()
+    mock_pull_all_books.assert_called_once()
+    mock_get_companies.assert_called_once()
+    mock_populate_financials.assert_called_once()
+    mock_populate_dividends.assert_called_once()
+    mock_populate_advanced_stats.assert_called_once()
+
+
+def test_load_invalid_blocks(mocker):
+    # ARRANGE:
+    datapoint: str = "invalid"
+    mock_get_stocks = mocker.patch.object(Iex, "get_stocks")
+    mock_pull_all_books = mocker.patch.object(Iex, "pull_all_books")
+    mock_get_companies = mocker.patch.object(Iex, "get_companies")
+    mock_populate_financials = mocker.patch.object(Iex, "populate_financials")
+    mock_populate_dividends = mocker.patch.object(Iex, "populate_dividends")
+    mock_populate_advanced_stats = mocker.patch.object(Iex, "populate_advanced_stats")
+    results: app.Results = app.Results()
+    results.ActionStatus = app.ActionStatus.ERROR
+    mock_load_from_iex = mocker.patch.object(Iex, "load_from_iex", return_value=results)
+
+    # ACT:
+    datapoints: List[str] = Iex([datapoint]).datapoints
+
+    # ASSERT:
+    assert datapoints == ["company"]
+    mock_get_stocks.assert_called_once()
+    mock_pull_all_books.assert_called_once()
+    mock_get_companies.assert_called_once()
+    mock_populate_financials.assert_called_once()
+    mock_populate_dividends.assert_called_once()
+    mock_populate_advanced_stats.assert_called_once()
+    mock_load_from_iex.assert_called_once()
