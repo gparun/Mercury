@@ -12,7 +12,6 @@ def lambda_handler(event=None, context=None):
         start_time = datetime.now()
 
         datasource = Iex()
-        datasource.load()
         # This funny thing is called list comprehension and is a damn fast iterator...
         # Here is how it works: https://nyu-cds.github.io/python-performance-tips/08-loops/
         [print(stock) for stock in datasource.Symbols]
