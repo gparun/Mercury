@@ -4,6 +4,8 @@ Contains Iex class which retrieves information from IEX API
 
 import json
 from decimal import Decimal
+from typing import List
+
 import requests
 import app
 from datawell.decorators import retry
@@ -12,9 +14,10 @@ from urllib.parse import urlencode
 
 class Iex(object):
 
-    def __init__(self):
+    def __init__(self, datapoints: List[str] = None):
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
+        self.datapoints = self._check_datapoints(datapoints)
         self.pull_all_books()
         self.get_companies()
         self.populate_financials()
@@ -22,6 +25,25 @@ class Iex(object):
         for stock in self.Symbols:
             stock['cash-flow'] = self.get_cash_flow(stock['symbol'])
         self.populate_advanced_stats()
+
+    def _check_datapoints(self, datapoints_to_check: List[str]) -> List[str]:
+        """
+        This method is used to check whether the desired datapoints are valid and accessible.
+        It makes a test API call for each datapoint in the list.
+         If there is no any valid datapoint, then list with "company" only is returned.
+
+        :param datapoints_to_check:
+        :return: list of valid datapoints
+        """
+        valid_blocks: List[str] = []
+        if datapoints_to_check and isinstance(datapoints_to_check, list):
+            for block in datapoints_to_check:
+                result: app.Results = self.load_from_iex(f"{app.BASE_API_URL}stock/aapl/batch{app.API_TOKEN}&types={block}")
+                if result.ActionStatus == app.ActionStatus.SUCCESS:
+                    valid_blocks.append(block)
+        if not valid_blocks:
+            valid_blocks.append("company")
+        return valid_blocks
 
     def get_stocks(self):
         """
