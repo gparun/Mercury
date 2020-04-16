@@ -31,7 +31,7 @@ class Iex(object):
         valid_blocks: List[str] = []
         if datapoints_to_check and isinstance(datapoints_to_check, list):
             for block in datapoints_to_check:
-                result: app.Results = self.load_from_iex(f"{app.BASE_API_URL}stock/aapl/batch{app.API_TOKEN}&types={block}")
+                result: app.Results = self.load_from_iex("stock/aapl/batch", {"types": block})
                 if result.ActionStatus == app.ActionStatus.SUCCESS:
                     valid_blocks.append(block)
         if not valid_blocks:
