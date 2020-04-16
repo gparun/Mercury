@@ -4,10 +4,11 @@ Contains Iex class which retrieves information from IEX API
 
 import json
 from decimal import Decimal
+from typing import List
+
 import requests
 import app
 from datawell.decorators import retry
-from typing import List
 
 class Iex(object):
 
@@ -15,8 +16,27 @@ class Iex(object):
 
     def __init__(self, datapoints: List[str] = None):
         self.Logger = app.get_logger(__name__)
-        self.datapoints = datapoints
         self.Symbols = self.get_stocks()
+        self.datapoints = self._check_datapoints(datapoints)
+
+    def _check_datapoints(self, datapoints_to_check: List[str]) -> List[str]:
+        """
+        This method is used to check whether the desired datapoints are valid and accessible.
+        It makes a test API call for each datapoint in the list.
+         If there is no any valid datapoint, then list with "company" only is returned.
+
+        :param datapoints_to_check:
+        :return: list of valid datapoints
+        """
+        valid_blocks: List[str] = []
+        if datapoints_to_check and isinstance(datapoints_to_check, list):
+            for block in datapoints_to_check:
+                result: app.Results = self.load_from_iex(f"{app.BASE_API_URL}stock/aapl/batch{app.API_TOKEN}&types={block}")
+                if result.ActionStatus == app.ActionStatus.SUCCESS:
+                    valid_blocks.append(block)
+        if not valid_blocks:
+            valid_blocks.append("company")
+        return valid_blocks
 
     def get_stocks(self):
         """
@@ -33,20 +53,20 @@ class Iex(object):
             raise ex
 
     @retry(delay=5, max_delay=30)
-    def load_from_iex(self, url_path: str, params: dict = None) -> app.Results:
+    def load_from_iex(self, uri: str, params: dict = None) -> app.Results:
         """
         Connects to the IEX endpoint and gets the data you requested
         :param url_path: service path
         :param params: extra parameters to include to url
         :return: Dict() with the answer from the endpoint
         """
-        self.Logger.info(f"Now retrieving from {app.BASE_API_URL}{url_path}")
+        self.Logger.info(f"Now retrieving from {app.BASE_API_URL}{uri}")
 
         request_params = {"token": app.API_TOKEN}
         if params is not None:
             request_params.update(params)
 
-        response = requests.get(f"{app.BASE_API_URL}{url_path}", params=request_params)
+        response = requests.get(f"{app.BASE_API_URL}{uri}", params=request_params)
         results = app.Results()
 
         if response.status_code == 200:
@@ -57,7 +77,7 @@ class Iex(object):
         else:
             error = response.status_code
             self.Logger.error(
-                f"Encountered an error: {error} ({response.text}) while retrieving {app.BASE_API_URL}{url_path}")
+                f"Encountered an error: {error} ({response.text}) while retrieving {app.BASE_API_URL}{uri}")
             if params is not None:
                 self.Logger.info(f"Failed parameters: {params}")
             results.Results = error
