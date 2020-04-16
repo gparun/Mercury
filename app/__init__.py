@@ -8,7 +8,7 @@ from enum import Enum
 import boto3
 
 BASE_API_URL: str = 'https://cloud.iexapis.com/v1/'
-API_TOKEN = f"?token={os.getenv('API_TOKEN')}"
+API_TOKEN = os.getenv('API_TOKEN')
 MAX_RETRIEVAL_THREADS = 16
 MAX_PERSISTENCE_THREADS = 16
 
@@ -20,8 +20,7 @@ AWS_TABLE_NAME = os.getenv('AWS_TABLE_NAME')
 
 if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'
-    API_TOKEN = f"?token={os.getenv('API_TEST_TOKEN')}"
-
+    API_TOKEN = os.getenv('API_TEST_TOKEN')
 
 class ActionStatus(Enum):
     SUCCESS = 0
