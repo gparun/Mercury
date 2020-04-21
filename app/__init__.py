@@ -22,6 +22,7 @@ if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'
     API_TOKEN = os.getenv('API_TEST_TOKEN')
 
+
 class ActionStatus(Enum):
     SUCCESS = 0
     ERROR = -1
@@ -39,7 +40,7 @@ class AppException(Exception):
         self.Message = message
 
 
-def get_logger(module_name: str, level: int = logging.INFO):
+def get_logger(module_name: str, level: int = logging.DEBUG):
     logging.basicConfig(format='%(asctime)s - %(name)s - %(process)d - [%(levelname)s] - %(message)s', datefmt='%d-%b-%y %H:%M:%S',
                         level=level)
     logger = logging.getLogger(module_name)

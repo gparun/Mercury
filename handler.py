@@ -10,8 +10,12 @@ def lambda_handler(event=None, context=None):
     logger = app.get_logger(module_name=__name__, level=logging.INFO)
     try:
         start_time = datetime.now()
-
-        datasource = Iex()
+        datapoints: list = [
+            "book", "company", "balance-sheet", "income", "estimates", "cash-flow",
+            "financials", "advanced-stats", "recommendation-trends", "ceo-compensation",
+            "delayed-quote", "intraday-prices", "largest-trades", "volume-by-venue"
+        ]
+        datasource = Iex(datapoints)
         # This funny thing is called list comprehension and is a damn fast iterator...
         # Here is how it works: https://nyu-cds.github.io/python-performance-tips/08-loops/
         [print(stock) for stock in datasource.Symbols]

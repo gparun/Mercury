@@ -7,7 +7,6 @@ import app
 from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
 from datetime import date
 from app import Results, ActionStatus, AppException
-from app.util.DictUtils import DictUtils
 import boto3
 from boto3.dynamodb.conditions import Key
 

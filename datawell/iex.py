@@ -10,14 +10,16 @@ import requests
 import app
 from datawell.decorators import retry
 
-class Iex(object):
 
+class Iex(object):
     SYMBOL_BATCH_SIZE = 100
+    DATAPOINT_BATCH_SIZE = 10
 
     def __init__(self, datapoints: List[str] = None):
         self.Logger = app.get_logger(__name__)
         self.Symbols = self.get_stocks()
         self.datapoints = self._check_datapoints(datapoints)
+        self.load_symbols_datapoints()
 
     def _check_datapoints(self, datapoints_to_check: List[str]) -> List[str]:
         """
@@ -56,7 +58,7 @@ class Iex(object):
     def load_from_iex(self, uri: str, params: dict = None) -> app.Results:
         """
         Connects to the IEX endpoint and gets the data you requested
-        :param url_path: service path
+        :param uri: service path
         :param params: extra parameters to include to url
         :return: Dict() with the answer from the endpoint
         """
@@ -79,27 +81,31 @@ class Iex(object):
             self.Logger.error(
                 f"Encountered an error: {error} ({response.text}) while retrieving {app.BASE_API_URL}{uri}")
             if params is not None:
-                self.Logger.info(f"Failed parameters: {params}")
+                self.Logger.error(f"Failed parameters: {params}")
             results.Results = error
 
         return results
 
-    def load_symbols_datapoints_info(self, datapoints: List[str]):
+    def load_symbols_datapoints(self):
+        for datapoints_batch in self._batchify(self.datapoints, self.DATAPOINT_BATCH_SIZE):
+            self._load_symbols_datapoints_info(datapoints_batch)
+
+    def _load_symbols_datapoints_info(self, datapoints: List[str]):
         """
         Splits Symbols into the 100 item bathes and get IEX data for each batch and defined datapoints.
         Updates Symbols with retrieved datapoint data.
         :param datapoints: list of datapoint names. Note that datapoints count must not exceed 10
         """
         symbols_dict = {symbol["symbol"]: symbol for symbol in self.Symbols}
-        for symbols_batch in self._batchify(list(symbols_dict.keys())):
+        for symbols_batch in self._batchify(list(symbols_dict.keys()), self.SYMBOL_BATCH_SIZE):
             result = self.load_symbols_from_iex("stock/market/batch", symbols_batch, datapoints)
             if result.ActionStatus == app.ActionStatus.SUCCESS:
                 self.update_symbols(symbols_dict, result.Results)
         self.Symbols = list(symbols_dict.values())
 
-    def _batchify(self, lst):
-        for i in range(0, len(lst), self.SYMBOL_BATCH_SIZE):
-            yield lst[i:i + self.SYMBOL_BATCH_SIZE]
+    def _batchify(self, lst, batch_size: int):
+        for i in range(0, len(lst), batch_size):
+            yield lst[i:i + batch_size]
 
     def update_symbols(self, symbols_dict: dict, data_points_data: dict):
         for symbol_name in data_points_data.keys():
