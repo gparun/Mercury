@@ -4,6 +4,7 @@ Contains core constants, datatypes etc. used application wise
 import logging
 import os
 from enum import Enum
+from pythonjsonlogger import jsonlogger
 
 import boto3
 
@@ -41,16 +42,29 @@ class AppException(Exception):
 
 
 def get_logger(module_name: str, level: int = logging.DEBUG):
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(process)d - [%(levelname)s] - %(message)s', datefmt='%d-%b-%y %H:%M:%S',
-                        level=level)
+    log_format = '%(asctime)s - %(name)s - %(process)d - [%(levelname)s] - %(message)s'
+    log_date_format = '%d-%b-%y %H:%M:%S'
+
     logger = logging.getLogger(module_name)
-    filename = os.getenv('LOG_FILE')
-    if filename:
-        handler = logging.FileHandler(filename)
-        log_format = logging.Formatter('%(asctime)s - %(name)s - %(process)d - [%(levelname)s] - %(message)s',
-                                       datefmt='%d-%b-%y %H:%M:%S')
-        handler.setFormatter(log_format)
-        logger.addHandler(handler)
+    logger.setLevel(level)
+
+    logger_type = os.getenv('LOGGER_TYPE')
+    if logger_type == "json":
+        formatter = jsonlogger.JsonFormatter(log_format, datefmt=log_date_format)
+    else:
+        formatter = logging.Formatter(log_format, datefmt=log_date_format)
+
+    if not logger.handlers:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
+        filename = os.getenv('LOG_FILE')
+        if filename:
+            handler = logging.FileHandler(filename)
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+
     return logger
 
 

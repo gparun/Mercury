@@ -45,3 +45,33 @@ class retry(object):
     def _exponential_delay(self, multiplier: int, delay: int, max_delay: int) -> int:
         exp_delay = delay ^ multiplier
         return exp_delay if not max_delay or exp_delay < max_delay else max_delay
+
+
+def log_execution_time(logger=None, category="", to_log_arguments=False):
+    def decorator(func):
+        function_module = func.__module__
+        _logger = app.get_logger(function_module) if logger is None else logger
+
+        @wraps(func)
+        def log_execution_time_wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            result = func(*args, **kwargs)
+            execution_time = int(round((time.perf_counter() - start_time) * 1000))
+
+            function_name = func.__name__
+            message_info = {
+                "Type": "execution_time",
+                "Execution_time": execution_time,
+                "Function": {"Name": function_name, "Module": function_module}
+            }
+            if category != "":
+                message_info["Category"] = category
+            if to_log_arguments:
+                args_str = ', '.join(repr(arg) for arg in args)
+                message_info["Function"].update({"args": args_str, "kwargs": kwargs})
+
+            _logger.info(f"{function_name}: Execution_time: {execution_time} ms, Category: {category}",
+                         extra={"message_info": message_info})
+            return result
+        return log_execution_time_wrapper
+    return decorator

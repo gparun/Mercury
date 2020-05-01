@@ -4,6 +4,7 @@ from typing import Generator
 from boto3.exceptions import RetriesExceededError
 from botocore.exceptions import ClientError
 import app
+from datawell.decorators import log_execution_time
 from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
 from datetime import date
 from app import Results, ActionStatus, AppException
@@ -17,6 +18,7 @@ class DynamoStore:
         self.dynamoDb = boto3.resource("dynamodb")
         self.table = self.dynamoDb.Table(app.AWS_TABLE_NAME)
 
+    @log_execution_time(category="store")
     def store_documents(self, documents: list) -> ActionStatus:
         """
         Persists list of dict() provided into the Dynamo table of the repo
@@ -42,6 +44,7 @@ class DynamoStore:
             ex = AppException(ex=e, message='Failed to store documents to DynamoDB.')
             raise ex
 
+    @log_execution_time()
     def get_filtered_documents(self, symbol_to_find: str = None, target_date: datetime.date = None):
         """
         Returns a list of documents matching given ticker and/or date
@@ -60,6 +63,7 @@ class DynamoStore:
                                                                 'for the Dynamo!')
             raise catastrophic_exception
 
+    @log_execution_time()
     def clean_table(self, symbols_to_remove: list) -> Results:
         """
         Use this one to either clean specific stocks from the db or clean up the db if its small.
@@ -86,6 +90,7 @@ class DynamoStore:
             raise AppException(e, "An error has occurred while interacting with Dynamo")
         return output
 
+    @log_execution_time()
     def _delete_symbols(self, symbols_to_remove: list) -> int:
         """
         Use this method to delete symbols using the batch_writer.
@@ -110,6 +115,7 @@ class DynamoStore:
                         )
         return total_items_to_delete
 
+    @log_execution_time()
     def _query_by_page(self, symbol: str) -> Generator[dict, None, None]:
         """Use this method to query all symbol related records using pagination.
 
@@ -136,6 +142,7 @@ class DynamoStore:
             if not last_evaluated_key:
                 return
 
+    @log_execution_time()
     def _recreate_table(self) -> None:
         """
         Use this method to clean the table quickly. It drops and creates a new table with the same schema.
@@ -245,6 +252,7 @@ class DynamoStore:
                                                                 'from the Dynamo!')
             raise catastrophic_exception
 
+    @log_execution_time()
     def get_dynamodb_resouce(self):
         return boto3.resource(
             'dynamodb',
@@ -285,6 +293,7 @@ class SymbolFilterCriteria:
             criteria_expression = criteria_expression & date_query if criteria_expression else date_query
         return criteria_expression
 
+    @log_execution_time()
     def query(self, table) -> list:
         """
         :param table: DynamoDB table to apply this criteria to
