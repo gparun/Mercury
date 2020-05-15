@@ -45,6 +45,7 @@ def get_logger(module_name: str, level: int = logging.DEBUG):
     log_format = '%(asctime)s - %(name)s - %(process)d - [%(levelname)s] - %(message)s'
     log_date_format = '%d-%b-%y %H:%M:%S'
 
+    clear_handlers(logging.getLogger())
     logger = logging.getLogger(module_name)
     logger.setLevel(level)
 
@@ -66,6 +67,12 @@ def get_logger(module_name: str, level: int = logging.DEBUG):
             logger.addHandler(handler)
 
     return logger
+
+
+def clear_handlers(logger):
+    if logger.handlers:
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
 
 
 def get_dynamodb_resource():
