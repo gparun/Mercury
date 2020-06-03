@@ -75,3 +75,34 @@ def log_execution_time(logger=None, category="", to_log_arguments=False):
             return result
         return log_execution_time_wrapper
     return decorator
+
+
+def publish_running_time_metric(namespace, module):
+    def decorator(func):
+        import boto3
+        cloud_watch_client = boto3.client('cloudwatch')
+
+        @wraps(func)
+        def execution_time_wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            result = func(*args, **kwargs)
+            running_time = int(round((time.perf_counter() - start_time) * 1000))
+            cloud_watch_client.put_metric_data(
+                MetricData=[
+                    {
+                        'MetricName': 'Running time',
+                        'Dimensions': [
+                            {
+                                'Name': 'Module Name',
+                                'Value': module
+                            }
+                        ],
+                        'Unit': 'Milliseconds',
+                        'Value': running_time
+                    }
+                ],
+                Namespace=namespace
+            )
+            return result
+        return execution_time_wrapper
+    return decorator

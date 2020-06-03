@@ -16,8 +16,8 @@ MAX_PERSISTENCE_THREADS = 16
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = os.getenv('AWS_REGION')
-TABLE_NAME = os.getenv('AWS_TABLE_NAME')
 AWS_TABLE_NAME = os.getenv('AWS_TABLE_NAME')
+AWS_TABLE_REGION = os.getenv('AWS_TABLE_REGION')
 
 if os.getenv('TEST_ENVIRONMENT') == 'True':
     BASE_API_URL: str = 'https://sandbox.iexapis.com/stable/'

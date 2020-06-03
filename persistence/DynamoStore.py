@@ -90,7 +90,6 @@ class DynamoStore:
             raise AppException(e, "An error has occurred while interacting with Dynamo")
         return output
 
-    @log_execution_time()
     def _delete_symbols(self, symbols_to_remove: list) -> int:
         """
         Use this method to delete symbols using the batch_writer.
@@ -115,7 +114,6 @@ class DynamoStore:
                         )
         return total_items_to_delete
 
-    @log_execution_time()
     def _query_by_page(self, symbol: str) -> Generator[dict, None, None]:
         """Use this method to query all symbol related records using pagination.
 
@@ -142,19 +140,18 @@ class DynamoStore:
             if not last_evaluated_key:
                 return
 
-    @log_execution_time()
-    def _recreate_table(self) -> None:
+    def recreate_table(self) -> None:
         """
         Use this method to clean the table quickly. It drops and creates a new table with the same schema.
         """
         self.Logger.info('Delete the table')
         self.table.delete()
         self.Logger.info('Wait until the table is deleted')
-        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.TABLE)
+        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.AWS_TABLE_NAME)
 
         self.Logger.info('Create a new table.')
         self.table = self.dynamoDb.create_table(
-            TableName=app.TABLE,
+            TableName=app.AWS_TABLE_NAME,
             AttributeDefinitions=[
                 {
                     'AttributeName': 'symbol',
@@ -204,7 +201,7 @@ class DynamoStore:
             },
         )
         self.Logger.info('Wait until the table exists.')
-        self.table.meta.client.get_waiter('table_exists').wait(TableName=app.TABLE)
+        self.table.meta.client.get_waiter('table_exists').wait(TableName=app.AWS_TABLE_NAME)
 
     def remove_empty_strings(self, dict_to_clean: dict) -> Results:
         """

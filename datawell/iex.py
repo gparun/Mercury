@@ -21,7 +21,7 @@ class Iex(object):
         self.datapoints = self._check_datapoints(datapoints)
         self.load_symbols_datapoints()
 
-    @log_execution_time(category="load_iex")
+    @log_execution_time()
     def _check_datapoints(self, datapoints_to_check: List[str]) -> List[str]:
         """
         This method is used to check whether the desired datapoints are valid and accessible.
@@ -41,7 +41,7 @@ class Iex(object):
             valid_blocks.append("company")
         return valid_blocks
 
-    @log_execution_time(category="load_iex")
+    @log_execution_time()
     def get_stocks(self):
         """
         Will return all the stocks being traded on IEX.
@@ -89,12 +89,11 @@ class Iex(object):
 
         return results
 
-    @log_execution_time(category="load_iex")
+    @log_execution_time()
     def load_symbols_datapoints(self):
         for datapoints_batch in self._batchify(self.datapoints, self.DATAPOINT_BATCH_SIZE):
             self._load_symbols_datapoints_info(datapoints_batch)
 
-    @log_execution_time()
     def _load_symbols_datapoints_info(self, datapoints: List[str]):
         """
         Splits Symbols into the 100 item bathes and get IEX data for each batch and defined datapoints.
@@ -112,7 +111,6 @@ class Iex(object):
         for i in range(0, len(lst), batch_size):
             yield lst[i:i + batch_size]
 
-    @log_execution_time()
     def update_symbols(self, symbols_dict: dict, data_points_data: dict):
         for symbol_name in data_points_data.keys():
             symbol = symbols_dict[symbol_name]
@@ -120,7 +118,6 @@ class Iex(object):
             for point_name in point_symbol.keys():
                 symbol[point_name] = point_symbol[point_name]
 
-    @log_execution_time()
     def load_symbols_from_iex(self, url_path: str, symbols: List[str], datapoints: List[str]):
         assert len(symbols) <= 100, 'Load from IEX error: symbols count must not exceed 100 per request'
         assert len(datapoints) <= 10, 'Load from IEX error: datapoints count must not exceed 10 per request'
