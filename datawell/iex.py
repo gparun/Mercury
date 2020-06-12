@@ -7,6 +7,8 @@ from decimal import Decimal
 from typing import List
 
 import requests
+from requests.exceptions import SSLError, RequestException
+
 import app
 from datawell.decorators import retry, log_execution_time
 
@@ -57,7 +59,7 @@ class Iex(object):
             raise ex
 
     @log_execution_time()
-    @retry(delay=5, max_delay=30)
+    @retry(delay=5, max_delay=30, retry_on=(429, 520, 526))
     def load_from_iex(self, uri: str, params: dict = None) -> app.Results:
         """
         Connects to the IEX endpoint and gets the data you requested
@@ -71,20 +73,32 @@ class Iex(object):
         if params is not None:
             request_params.update(params)
 
-        response = requests.get(f"{app.BASE_API_URL}{uri}", params=request_params)
         results = app.Results()
-
-        if response.status_code == 200:
-            iex_data = json.loads(response.content.decode("utf-8"), parse_float=Decimal)
-
-            results.ActionStatus = app.ActionStatus.SUCCESS
-            results.Results = iex_data
-        else:
-            error = response.status_code
+        try:
+            response = requests.get(f"{app.BASE_API_URL}{uri}", params=request_params)
+            if response.status_code == 200:
+                iex_data = json.loads(response.content.decode("utf-8"), parse_float=Decimal)
+                results.ActionStatus = app.ActionStatus.SUCCESS
+                results.Results = iex_data
+            else:
+                error = response.status_code
+                self.Logger.error(
+                    f"Encountered an error: {error} ({response.text}) "
+                    f"while retrieving {app.BASE_API_URL}{uri}")
+                if params is not None:
+                    self.Logger.error(f"Failed parameters: {params}")
+                results.Results = error
+        except SSLError:
+            error = 526
             self.Logger.error(
-                f"Encountered an error: {error} ({response.text}) while retrieving {app.BASE_API_URL}{uri}")
-            if params is not None:
-                self.Logger.error(f"Failed parameters: {params}")
+                f"Encountered an error: {error} (Invalid SSL Certificate) "
+                f"while retrieving {app.BASE_API_URL}{uri}")
+            results.Results = error
+        except RequestException:
+            self.Logger.error(
+                f"Encountered an error: {error} (Unknown Error) "
+                f"while retrieving {app.BASE_API_URL}{uri}")
+            error = 520
             results.Results = error
 
         return results
