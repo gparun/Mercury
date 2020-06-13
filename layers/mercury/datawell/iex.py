@@ -8,7 +8,7 @@ from typing import List
 
 import requests
 import app
-from datawell.decorators import retry, log_execution_time
+from layers.mercury.datawell.decorators import retry, log_execution_time
 
 
 class Iex(object):

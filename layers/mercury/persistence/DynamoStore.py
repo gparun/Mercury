@@ -4,8 +4,8 @@ from typing import Generator
 from boto3.exceptions import RetriesExceededError
 from botocore.exceptions import ClientError
 import app
-from datawell.decorators import log_execution_time
-from persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
+from layers.mercury.datawell.decorators import log_execution_time
+from layers.mercury.persistence.DynamoBatchWriter import DynamoBatchWriter, RetryConfig
 from datetime import date
 from app import Results, ActionStatus, AppException
 import boto3

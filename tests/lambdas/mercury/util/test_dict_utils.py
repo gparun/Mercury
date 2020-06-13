@@ -3,7 +3,7 @@ from unittest import TestCase
 import app
 from app import ActionStatus
 from app.util.DictUtils import DictUtils
-from persistence.DynamoStore import DynamoStore
+from layers.mercury.persistence.DynamoStore import DynamoStore
 
 TABLE_NAME = "test-table"
 

@@ -2,8 +2,8 @@ from datetime import datetime
 from unittest import TestCase
 
 from app import AWS_TABLE_NAME
-from datawell.iex import Iex
-from persistence.DynamoStore import DynamoStore
+from layers.mercury.datawell.iex import Iex
+from layers.mercury.persistence.DynamoStore import DynamoStore
 
 
 class TestDynamoStore(TestCase):

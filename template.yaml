@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: SAM Template for Mercury
+
+Resources:
+  MercuryLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: MercuryLayer
+      Description: Mercury Layer
+      ContentUri: _dependencies/mercury
+      CompatibleRuntimes:
+        - python3.8
+
+  MercuryLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MercuryLambda
+      CodeUri: lambdas/mercury/
+      Handler: handler.lambda_handler
+      Runtime: python3.8
+      Layers:
+        - !Ref MercuryLayer

@@ -1,3 +1,6 @@
 venv
 .idea
 __pycache__/
+_dependencies
+.aws-sam
+packaged-template.yaml
