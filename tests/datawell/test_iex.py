@@ -1,8 +1,6 @@
 from typing import List
 
 import pytest
-from requests import RequestException
-from requests.exceptions import SSLError
 
 import app
 from datawell.iex import Iex
@@ -85,19 +83,3 @@ def test_load_invalid_blocks(mocker):
     mock_populate_dividends.assert_called_once()
     mock_populate_advanced_stats.assert_called_once()
     mock_load_from_iex.assert_called_once()
-
-
-@pytest.mark.parametrize("exception, message, error", [
-    (SSLError, 'Invalid SSL Certificate', 526),
-    (RequestException, 'Unknown Error', 520)
-])
-def test_ssl_error(mocker, exception, message, error):
-    # GIVEN
-    mocker.patch('requests', 'get', side_effect=exception)
-
-    # WHEN
-    with pytest.raises(exception) as e:
-        Iex(['datapoint'])
-
-    # THEN
-    assert e.value.args[0] == f"Encountered an error: {error} ({message}) while retrieving {app.BASE_API_URL}"

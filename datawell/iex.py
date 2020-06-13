@@ -95,10 +95,10 @@ class Iex(object):
                 f"while retrieving {app.BASE_API_URL}{uri}")
             results.Results = error
         except RequestException:
+            error = 520
             self.Logger.error(
                 f"Encountered an error: {error} (Unknown Error) "
                 f"while retrieving {app.BASE_API_URL}{uri}")
-            error = 520
             results.Results = error
 
         return results
