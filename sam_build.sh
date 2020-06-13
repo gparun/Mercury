@@ -1,3 +1,5 @@
+#!/bin/bash
+
 PYTHON_VERSION="python3.8"
 
 MERCURY_BUCKET=your-bucket
