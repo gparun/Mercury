@@ -31,6 +31,8 @@ Resources:
       AutoPublishAlias: "live"
       Handler: handler.lambda_handler
       Description: Mercury Lambda
+      DeploymentPreference:
+        Type: AllAtOnce
 # END LAMBDA
 
 Outputs:
@@ -41,5 +43,5 @@ Outputs:
     Description: "Mercury Lambda Function"
     Value: !GetAtt MercuryLambda.Arn
   MercuryLambdaVersion:
-    Description: "Mercury Lambda Function"
+    Description: "Mercury Lambda Version"
     Value: !GetAtt MercuryLambda.Version
