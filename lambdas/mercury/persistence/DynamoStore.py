@@ -28,6 +28,13 @@ class DynamoStore:
         try:
             cleaned_documents = self.cleanup_symbol_documents(documents)
             client = self.get_dynamodb_resouce()
+
+            # if table does not exist, create it
+            try:
+                self.table.creation_date_time
+            except :
+                   self.create_table()
+
             with DynamoBatchWriter(table=app.AWS_TABLE_NAME, dynamo_client=client, retries=RetryConfig(10)) as batch:
                 for document in cleaned_documents:
                     batch.put_item(
@@ -140,15 +147,7 @@ class DynamoStore:
             if not last_evaluated_key:
                 return
 
-    def recreate_table(self) -> None:
-        """
-        Use this method to clean the table quickly. It drops and creates a new table with the same schema.
-        """
-        self.Logger.info('Delete the table')
-        self.table.delete()
-        self.Logger.info('Wait until the table is deleted')
-        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.AWS_TABLE_NAME)
-
+    def create_table(self) -> None:
         self.Logger.info('Create a new table.')
         self.table = self.dynamoDb.create_table(
             TableName=app.AWS_TABLE_NAME,
@@ -202,6 +201,17 @@ class DynamoStore:
         )
         self.Logger.info('Wait until the table exists.')
         self.table.meta.client.get_waiter('table_exists').wait(TableName=app.AWS_TABLE_NAME)
+  
+    def _recreate_table(self) -> None:
+        """
+        Use this method to clean the table quickly. It drops and creates a new table with the same schema.
+        """
+        self.Logger.info('Delete the table')
+        self.table.delete()
+        self.Logger.info('Wait until the table is deleted')
+        self.table.meta.client.get_waiter('table_not_exists').wait(TableName=app.AWS_TABLE_NAME)
+        self.create_table()
+
 
     def remove_empty_strings(self, dict_to_clean: dict) -> Results:
         """
