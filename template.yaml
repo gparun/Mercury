@@ -32,6 +32,19 @@ Resources:
       Description: Mercury Lambda
       DeploymentPreference:
         Type: AllAtOnce
+      Environment:
+        Variables:
+          API_TEST_TOKEN: !Ref ApiTestToken
+          API_TOKEN: !Ref ApiToken
+          AWS_TABLE_NAME: !Ref AwsTableName
+          AWS_TABLE_REGION: !Ref AwsTableRegion
+          LOGGER_TYPE: !Ref LoggerType
+          TEST_ENVIRONMENT: !Ref TestEnvironmentFlag
+      Event:
+        EveryWorkDayAt5:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(0 5 ? * MON-FRI *)'
 # END LAMBDA
 
 Outputs:
