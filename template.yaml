@@ -1,6 +1,30 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: Set of resources for the SmartAss - datalake and lambdas
+Transform: 'AWS::Serverless-2016-10-31'
+Description: SAM Template for Mercury
+
+Parameters:
+  ApiTestToken:
+    Type: String
+    Description: 'Iex test token'
+  ApiToken:
+    Type: String
+    Description: 'Iex prod token'
+  AwsTableName:
+    Type: String
+    Default: 'IexSnapshot'
+    Description: 'Name of DynamoDB table to store Symbol data'
+  AwsTableRegion:
+    Type: String
+    Default: 'us-east-1'
+    Description: 'DynamoDB table region'
+  LoggerType:
+      Type: String
+      Default: 'json'
+      Description: 'Logs format. If value = json logs in json format will be generated, otherwise - standard text logs'
+  TestEnvironmentFlag:
+    Type: String
+    Default: 'True'
+    Description: 'Test environment flag'
 
 Resources:
 # ROLE
@@ -41,7 +65,7 @@ Resources:
           AWS_TABLE_REGION: !Ref AwsTableRegion
           LOGGER_TYPE: !Ref LoggerType
           TEST_ENVIRONMENT: !Ref TestEnvironmentFlag
-      Event:
+      Events:
         EveryWorkDayAt5:
           Type: Schedule
           Properties:
