@@ -1,3 +1,46 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Set of resources for the SmartAss - datalake and lambdas
+
+Resources:
+# ROLE
+  MercuryLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub mercury-lambda-execution-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+# END ROLE
+
+# LAMBDA
+  MercuryLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: !Sub 'mercury-lambda'
+      Runtime: python3.7
+      CodeUri: lambdas/mercury/
+      Role: !GetAtt MercuryLambdaExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 30
+      Handler: handler.lambda_handler
+      Description: Mercury Lambda
+      DeploymentPreference:
+        Type: AllAtOnce
+# END LAMBDA
+
+Outputs:
+  MercuryLambdaExecutionRole:
+    Description: "Mercury Lambda Execution Role Arn"
+    Value: !GetAtt MercuryLambdaExecutionRole.Arn
+  MercuryLambda:
+    Description: "Mercury Lambda Function"
+    Value: !GetAtt MercuryLambda.Arn
+  MercuryLambdaVersion:
+    Description: "Mercury Lambda Version"
+    Value: !GetAtt MercuryLambda.Version
