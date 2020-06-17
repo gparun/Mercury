@@ -36,6 +36,12 @@ def _load_iex_data():
 @log_execution_time()
 @publish_running_time_metric('iex', 'store')
 def _store_iex_data(datasource):
-    datalake = DynamoStore(app.AWS_TABLE_NAME)
-    datalake.store_documents(documents=datasource.Symbols)
+    try:
+        default_message = 'Failed to persist documents to the datalake, check underlying modules logs for exceptions'
+        datalake = DynamoStore(app.AWS_TABLE_NAME)
+        result = datalake.store_documents(documents=datasource.Symbols)
+        if result.ERROR:
+            raise app.AppException(message=default_message)
+    except app.AppException as e:
+        raise app.AppException(ex=e, message=e.Message)
 

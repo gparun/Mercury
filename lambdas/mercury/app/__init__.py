@@ -36,7 +36,7 @@ class Results:
 
 
 class AppException(Exception):
-    def __init__(self, ex, message="See exception for detailed message."):
+    def __init__(self, ex=None, message="See exception for detailed message."):
         self.Exception = ex
         self.Message = message
 
