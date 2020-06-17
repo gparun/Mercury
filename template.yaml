@@ -28,6 +28,7 @@ Resources:
       Role: !GetAtt MercuryLambdaExecutionRole.Arn
       MemorySize: 128
       Timeout: 30
+      AutoPublishAlias: "live"
       Handler: handler.lambda_handler
       Description: Mercury Lambda
       DeploymentPreference:
