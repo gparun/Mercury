@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 import app
+from app import ActionStatus
 from datawell.decorators import publish_running_time_metric, log_execution_time
 from datawell.iex import Iex
 from persistence.DynamoStore import DynamoStore
@@ -40,7 +41,7 @@ def _store_iex_data(datasource):
         default_message = 'Failed to persist documents to the datalake, check underlying modules logs for exceptions'
         datalake = DynamoStore(app.AWS_TABLE_NAME)
         result = datalake.store_documents(documents=datasource.Symbols)
-        if result.ERROR:
+        if result is ActionStatus.ERROR:
             raise app.AppException(message=default_message)
     except app.AppException as e:
         raise app.AppException(ex=e, message=e.Message)
