@@ -25,6 +25,10 @@ Parameters:
     Type: String
     Default: 'True'
     Description: 'Test environment flag'
+  MercuryLambdaTimeoutSec:
+    Type: Number
+    Default: 600
+    Description: 'MercuryLambda function execution timeout in seconds'
 
 Resources:
 # ROLE
@@ -62,7 +66,7 @@ Resources:
       CodeUri: lambdas/mercury/
       Role: !GetAtt MercuryLambdaExecutionRole.Arn
       MemorySize: 128
-      Timeout: 30
+      Timeout: !Ref MercuryLambdaTimeoutSec
       AutoPublishAlias: "live"
       Handler: handler.lambda_handler
       Description: Mercury Lambda
