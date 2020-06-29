@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploy this template using CloudFormation to start working with the Mercury. This template will create a CICD pipeline,
+  which will connect to the GitHub, obtain the latest version of the master branch, and deploy it via SAM, creating and
+  populating all the necessary resources.
+
+  # ROLE
+  # END ROLE
+
+  # SOURCE STAGE
+  # END SOURCE STAGE
+
+  # BUILD STAGE
+  # END BUILD STAGE
+
+  # TEST STAGE
+  # END TEST STAGE
+
+  # AT STAGE
+  # END AT STAGE
+
+  # DEPLOY STAGE
+  # END DEPLOY STAGE
