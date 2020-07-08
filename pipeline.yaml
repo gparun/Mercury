@@ -20,4 +20,20 @@ Description: >-
   # END AT STAGE
 
   # DEPLOY STAGE
+  - Name: Deploy
+    Actions:
+      - Name: CreateChangeSet
+        ActionTypeId:
+          Category: Deploy
+          Owner: AWS
+          Version: 1
+          Provider: CloudFormation
+        InputArtifacts:
+          - Name: SourceArtifact
+        Configuration:
+          ActionMode: CREATE_UPDATE
+          Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
+          ChangeSetName: mercury-pipeline-changeset
+          StackName: mercury-pipeline-stack
+          TemplatePath: 'SourceArtifact::packaged-template.yaml'
   # END DEPLOY STAGE
