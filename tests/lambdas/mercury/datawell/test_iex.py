@@ -3,7 +3,7 @@ from typing import List
 import pytest
 
 import app
-from datawell.iex import Iex
+from lambdas.mercury.datawell.iex import Iex
 
 
 def test_load_valid_blocks(mocker):

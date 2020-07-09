@@ -18,20 +18,24 @@ Parameters:
     Default: 'us-east-1'
     Description: 'DynamoDB table region'
   LoggerType:
-      Type: String
-      Default: 'json'
-      Description: 'Logs format. If value = json logs in json format will be generated, otherwise - standard text logs'
+    Type: String
+    Default: 'json'
+    Description: 'Logs format. If value = json logs in json format will be generated, otherwise - standard text logs'
   TestEnvironmentFlag:
     Type: String
     Default: 'True'
     Description: 'Test environment flag'
+  MercuryLambdaTimeoutSec:
+    Type: Number
+    Default: 600
+    Description: 'MercuryLambda function execution timeout in seconds'
 
 Resources:
 # ROLE
   MercuryLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub mercury-lambda-execution-role
+      RoleName: mercury-lambda-execution-role
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -42,19 +46,32 @@ Resources:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
 # END ROLE
 
+# LAYERS
+  MercuryLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: MercuryLayer
+      Description: Mercury Layer
+      ContentUri: _dependencies/mercury
+      CompatibleRuntimes:
+        - python3.8
+# END LAYERS
+
 # LAMBDA
   MercuryLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: !Sub 'mercury-lambda'
-      Runtime: python3.7
+      FunctionName: 'mercury-lambda'
+      Runtime: python3.8
       CodeUri: lambdas/mercury/
       Role: !GetAtt MercuryLambdaExecutionRole.Arn
       MemorySize: 128
-      Timeout: 30
+      Timeout: !Ref MercuryLambdaTimeoutSec
       AutoPublishAlias: "live"
       Handler: handler.lambda_handler
       Description: Mercury Lambda
+      Layers:
+        - !Ref MercuryLayer
       DeploymentPreference:
         Type: AllAtOnce
       Environment:
@@ -81,4 +98,4 @@ Outputs:
     Value: !GetAtt MercuryLambda.Arn
   MercuryLambdaVersion:
     Description: "Mercury Lambda Version"
-    Value: !GetAtt MercuryLambda.Version
+    Value: !Ref MercuryLambda.Version

@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 from _pytest.monkeypatch import MonkeyPatch
 
 import app
-from app import ActionStatus
-from app.util.DictUtils import DictUtils
-from persistence.DynamoStore import DynamoStore
+from lambdas.mercury.app import ActionStatus
+from lambdas.mercury.app.util.DictUtils import DictUtils
+from lambdas.mercury.persistence.DynamoStore import DynamoStore
 
 TABLE_NAME = "test-table"
 
